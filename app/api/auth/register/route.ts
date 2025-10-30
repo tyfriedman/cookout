@@ -21,6 +21,9 @@ function isValidUsername(username: string): boolean {
 }
 
 export async function POST(request: Request) {
+   // if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+   //    return NextResponse.json({ error: 'Server misconfiguration. No env vars found.' }, { status: 500 });
+   // }
   try {
     const body = (await request.json()) as RegisterBody;
     const { username, firstname, lastname, email, password } = body;
@@ -65,9 +68,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
-  }
+   } catch (err) {
+      console.error('Register error:', err);
+      return NextResponse.json({ error: 'Server error' }, { status: 500 });
+   }
 }
 
 

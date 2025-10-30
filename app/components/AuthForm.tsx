@@ -102,7 +102,8 @@ export default function AuthForm() {
             required
             minLength={2}
             maxLength={50}
-            pattern="[A-Za-z0-9_-]+"
+            pattern="[A-Za-z0-9_\-]{2,25}"
+            title="Use 2–25 characters: letters, numbers, underscores, or hyphens"
             placeholder="yourname"
             style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }}
           />
