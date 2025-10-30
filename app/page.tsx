@@ -7,7 +7,7 @@ export default function Page() {
         <header style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{ fontSize: 40, lineHeight: 1.1, margin: 0 }}>Cookout</h1>
           <p style={{ color: '#6b7280', marginTop: 8 }}>
-            Tell us what you have. We suggest what to cook. Share with friends.
+          Cook. Share. Enjoy.
           </p>
         </header>
 

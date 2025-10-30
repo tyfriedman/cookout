@@ -41,6 +41,11 @@ export default function AuthForm() {
       setSuccess(mode === 'signup' ? 'Account created. You can log in now.' : 'Logged in successfully.');
       if (mode === 'signup') {
         setMode('login');
+      } else {
+        // store username for subsequent pages and navigate to home
+        const username = payload.username as string;
+        try { window.localStorage.setItem('cookout_username', username); } catch {}
+        window.location.href = '/home';
       }
     } catch (e: any) {
       setError(e.message || 'Unexpected error');
