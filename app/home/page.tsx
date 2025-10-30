@@ -82,7 +82,7 @@ export default function HomePage() {
         </header>
         <section style={{ display: 'flex', flexWrap: 'nowrap', gap: 20, overflowX: 'auto', justifyContent: 'center' }}>
           <Card title="Pantry" icon={<Icon name="basket" />} onClick={() => router.push('/pantry')} />
-          <Card title="Recipes" icon={<Icon name="book" />} onClick={() => router.push('/recipes')} />
+          <Card title="Recipes" icon={<Icon name="book" />} onClick={() => router.push('/recipes/search')} />
           <Card title="Posts" icon={<Icon name="dish" />} onClick={() => router.push('/posts')} />
           <Card title="Cookout" icon={<Icon name="fire" />} onClick={() => router.push('/cookout')} />
           <Card title="Profile" icon={<Icon name="stick" />} onClick={() => router.push('/profile')} />
