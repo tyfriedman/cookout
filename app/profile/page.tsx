@@ -60,7 +60,17 @@ export default function ProfilePage() {
 
   return (
     <main style={{ minHeight: '100svh', display: 'grid', alignItems: 'center', padding: '6vh 20px' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', width: '100%' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', position: 'relative' }}>
+        <button
+          type="button"
+          onClick={() => { window.location.href = '/home'; }}
+          aria-label="Back to home"
+          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: 'transparent', border: '1px solid #e5e7eb', cursor: 'pointer' }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
         <header style={{ textAlign: 'center', marginBottom: 24 }}>
           <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
         </header>

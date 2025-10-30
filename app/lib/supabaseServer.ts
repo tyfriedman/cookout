@@ -9,8 +9,6 @@ export function getSupabaseServerClient() {
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   }
-  console.log('SUPABASE_URL', process.env.SUPABASE_URL);
-  console.log('SUPABASE_SERVICE_ROLE_KEY', serviceRoleKey);
   
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: {

@@ -132,9 +132,8 @@ export default function PantryPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <header style={{ marginBottom: 24, paddingLeft: 44 }}>
+        <header style={{ marginBottom: 24, textAlign: 'center' }}>
           <h1 style={{ fontSize: 28, margin: 0 }}>Pantry</h1>
-          <p style={{ color: '#6b7280', marginTop: 8 }}>Your current items</p>
         </header>
 
         {!username && (
