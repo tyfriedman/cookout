@@ -1,23 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
-// GET - fetch posts by username
+// GET - fetch posts (all posts OR filtered by username)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const username = searchParams.get('username');
 
-    if (!username) {
-      return NextResponse.json({ error: 'Username required' }, { status: 400 });
-    }
-
     const supabase = getSupabaseServerClient();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('posts')
       .select('*')
-      .eq('usernamefk', username)
       .order('post_time', { ascending: false });
+
+    // If username provided, filter by that user (for profile page)
+    if (username) {
+      query = query.eq('usernamefk', username);
+    }
+    // Otherwise return all posts (for posts feed)
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Supabase error:', error);
