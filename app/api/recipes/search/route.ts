@@ -28,9 +28,35 @@ export async function POST(request: Request) {
             { key: 'lowCarb', column: 'low_carb' },
         ] as const;
 
+        // Meal type filters
+        const meal = filters?.meal ?? {};
+        const mealString = filters?.mealType as string | undefined; // e.g., "Main Dish" or 'All'
+        const mealArray = (filters?.mealTypes as string[] | undefined) ?? [];
+
+        const mealKeys = [
+            { key: 'mainDish', column: 'main_dish' },
+            { key: 'sideDish', column: 'side_dish' },
+            { key: 'breakfast', column: 'breakfast' },
+            { key: 'lunch', column: 'lunch' },
+            { key: 'dinner', column: 'dinner' },
+            { key: 'dessert', column: 'dessert' },
+        ] as const;
+
+        const mealLabelToColumn: Record<string, string> = {
+            'main dish': 'main_dish',
+            'side dish': 'side_dish',
+            'breakfast': 'breakfast',
+            'lunch': 'lunch',
+            'dinner': 'dinner',
+            'dessert': 'dessert',
+        };
+
         const anyDietary = dietaryKeys.some(k => Boolean(dietary[k.key as keyof typeof dietary]));
         const anyHealth = healthKeys.some(k => Boolean(health[k.key as keyof typeof health]));
-        const anyFilters = anyDietary || anyHealth;
+        const anyMealBooleans = mealKeys.some(k => Boolean(meal[k.key as keyof typeof meal]));
+        const anyMealString = Boolean(mealString && mealString !== 'All');
+        const anyMealArray = mealArray.length > 0;
+        const anyFilters = anyDietary || anyHealth || anyMealBooleans || anyMealString || anyMealArray;
 
         const relationSelect = anyFilters ? 'recipe_tags!inner(*)' : 'recipe_tags(*)';
 
@@ -61,6 +87,33 @@ export async function POST(request: Request) {
                 query = query.eq(`recipe_tags.${column}`, true);
             }
         });
+
+        // Meal filters from boolean flags
+        mealKeys.forEach(({ key, column }) => {
+            if (meal[key as keyof typeof meal]) {
+                query = query.eq(`recipe_tags.${column}`, true);
+            }
+        });
+
+        // Meal filters from single select string
+        if (anyMealString && mealString) {
+            const normalized = mealString.toLowerCase().trim();
+            const column = mealLabelToColumn[normalized];
+            if (column) {
+                query = query.eq(`recipe_tags.${column}`, true);
+            }
+        }
+
+        // Meal filters from array of labels
+        if (anyMealArray) {
+            mealArray.forEach((label) => {
+                const normalized = String(label).toLowerCase().trim();
+                const column = mealLabelToColumn[normalized];
+                if (column) {
+                    query = query.eq(`recipe_tags.${column}`, true);
+                }
+            });
+        }
 
         // if (keywords && keywords.trim() !== '') {
         //     query = query.ilike('name', `%${keywords}%`);
