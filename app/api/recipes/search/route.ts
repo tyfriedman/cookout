@@ -6,29 +6,61 @@ export async function POST(request: Request) {
         const { filters, keywords } = await request.json();
 
         const supabase = getSupabaseServerClient();
-        
+
+        // Determine if any filters are active (true) so we can apply an inner join
+        const dietary = filters?.dietary ?? {};
+        const health = filters?.health ?? {};
+
+        const dietaryKeys = [
+            { key: 'vegetarian', column: 'vegetarian' },
+            { key: 'vegan', column: 'vegan' },
+            { key: 'pescatarian', column: 'pescatarian' },
+            { key: 'glutenFree', column: 'gluten_free' },
+            { key: 'nutFree', column: 'nut_free' },
+            { key: 'dairyFree', column: 'dairy_free' },
+        ] as const;
+
+        const healthKeys = [
+            { key: 'lowCalorie', column: 'low_calorie' },
+            { key: 'lowFat', column: 'low_fat' },
+            { key: 'lowSugar', column: 'low_sugar' },
+            { key: 'lowSodium', column: 'low_sodium' },
+            { key: 'lowCarb', column: 'low_carb' },
+        ] as const;
+
+        const anyDietary = dietaryKeys.some(k => Boolean(dietary[k.key as keyof typeof dietary]));
+        const anyHealth = healthKeys.some(k => Boolean(health[k.key as keyof typeof health]));
+        const anyFilters = anyDietary || anyHealth;
+
+        const relationSelect = anyFilters ? 'recipe_tags!inner(*)' : 'recipe_tags(*)';
+
         let query = supabase.from('recipes').select(`
             recipe_id,
-            name, 
-            calories, 
+            name,
+            calories,
             protein,
             carb,
             fat,
             sugar,
-            recipe_tags(*)
-            `)
-            .ilike('name', `%${keywords.trim()}%`)
-            .eq('recipe_tags.vegetarian', filters.dietary.vegetarian)
-            .eq('recipe_tags.vegan', filters.dietary.vegan)
-            .eq('recipe_tags.pescatarian', filters.dietary.pescatarian)
-            .eq('recipe_tags.gluten_free', filters.dietary.glutenFree)
-            .eq('recipe_tags.nut_free', filters.dietary.nutFree)
-            .eq('recipe_tags.dairy_free', filters.dietary.dairyFree)
-            .eq('recipe_tags.low_calorie', filters.health.lowCalorie)
-            .eq('recipe_tags.low_fat', filters.health.lowFat)
-            .eq('recipe_tags.low_sugar', filters.health.lowSugar)
-            .eq('recipe_tags.low_sodium', filters.health.lowSodium)
-            .eq('recipe_tags.low_carb', filters.health.lowCarb);
+            ${relationSelect}
+        `);
+
+        if (keywords && keywords.trim() !== '') {
+            query = query.ilike('name', `%${keywords.trim()}%`);
+        }
+
+        // Apply only filters explicitly set to true
+        dietaryKeys.forEach(({ key, column }) => {
+            if (dietary[key as keyof typeof dietary]) {
+                query = query.eq(`recipe_tags.${column}`, true);
+            }
+        });
+
+        healthKeys.forEach(({ key, column }) => {
+            if (health[key as keyof typeof health]) {
+                query = query.eq(`recipe_tags.${column}`, true);
+            }
+        });
 
         // if (keywords && keywords.trim() !== '') {
         //     query = query.ilike('name', `%${keywords}%`);
@@ -50,22 +82,7 @@ export async function POST(request: Request) {
         //     }
         // }
 
-        // if (filters?.dietary) {
-        //     if (filters.dietary.vegetarian) query = query.eq('recipe_tags.vegetarian', true);
-        //     if (filters.dietary.vegan) query = query.eq('recipe_tags.vegan', true);
-        //     if (filters.dietary.pescatarian) query = query.eq('recipe_tags.pescatarian', true);
-        //     if (filters.dietary.glutenFree) query = query.eq('recipe_tags.gluten_free', true);
-        //     if (filters.dietary.nutFree) query = query.eq('recipe_tags.nut_free', true);
-        //     if (filters.dietary.dairyFree) query = query.eq('recipe_tags.dairy_free', true);
-        // }
-
-        // if (filters?.health) {
-        //     if (filters.health.lowCalorie) query = query.eq('recipe_tags.low_calorie', true);
-        //     if (filters.health.lowFat) query = query.eq('recipe_tags.low_fat', true);
-        //     if (filters.health.lowSugar) query = query.eq('recipe_tags.low_sugar', true);
-        //     if (filters.health.lowSodium) query = query.eq('recipe_tags.low_sodium', true);
-        //     if (filters.health.lowCarb) query = query.eq('recipe_tags.low_carb', true);
-        // }
+        // (legacy conditional filters retained above in a more concise form)
 
 
         const { data, error } = await query;
