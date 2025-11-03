@@ -30,7 +30,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rec
         fat: data.fat,
         sugar: data.sugar,
         instructions: data.instructions,
-        description: data.recipe_tags?.description || '',
+        description: (Array.isArray(data.recipe_tags)
+          ? data.recipe_tags[0]?.description
+          : (data as any).recipe_tags?.description) || '',
       },
     });
   } catch (err: any) {
