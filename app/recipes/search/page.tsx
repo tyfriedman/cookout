@@ -226,6 +226,9 @@ export default function RecipesPage() {
                         <p style={{ color: '#6b7280', marginTop: 4 }}>
                           {recipe.calories} calories • {recipe.protein} g protein • {recipe.carb} g carbs • {recipe.sugar} g sugar • {recipe.fat} g fat
                         </p>
+                        {/* <p style={{ color: '#6b7280', marginTop: 4 }}>
+                          low fat: {recipe.recipe_tags.low_fat} • {recipe.protein} g protein • {recipe.carb} g carbs • {recipe.sugar} g sugar • {recipe.fat} g fat
+                        </p> */}
                         <p style={{ marginTop: 8 }}>{recipe.description}</p>
                       </div>
                     </Link>
