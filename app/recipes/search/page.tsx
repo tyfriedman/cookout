@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 
 type Recipe = {recipe_id: number, 
             name: string, 
-            prep_time: number,
-            instructions: string, 
             calories: number, 
             fat: number,
-            carb: number,
             sugar: number,
+            carb: number,
             protein: number
             }
 
@@ -47,11 +46,14 @@ export default function RecipesPage() {
   }, []);
 
   useEffect(() => {
-    fetchRecipes();
-  }, [searchQuery, userPreferences]);
+    if (username !== null) fetchRecipes();
+  }, [username, searchQuery, userPreferences]);
   
   async function fetchRecipes() {
     try {
+      setLoading(true);
+      setError(null);
+
       const response = await fetch('/api/recipes/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,10 +62,15 @@ export default function RecipesPage() {
           filters: userPreferences,
         }),
       });
-      const recipes = await response.json();
-      if (!response.ok) throw new Error(recipes.error || 'Failed to fetch recipes');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch recipes');
+      
+      setRecipes(data.recipes);
     } catch (err: any) {
       console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -148,15 +155,23 @@ export default function RecipesPage() {
         />
 
         {/* Search Button */}
-        <button
+        {/* <button
           type="button"
           onClick={async () => {
             try {
               setLoading(true);
-              const res = await fetch(`/api/recipes/search?q=${encodeURIComponent(query)}`);
-              const data = await res.json();
-              if (!res.ok) throw new Error(data.error || 'Search failed');
-              setOptions(data.items);
+              const response = await fetch('/api/recipes/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  keywords: searchQuery,
+                  filters: userPreferences,
+                }),
+              });
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.error || 'Search failed');
+              setRecipes(data.recipes);
+              setSearchQuery('')
             } catch (err: any) {
               setError(err.message);
             } finally {
@@ -177,9 +192,48 @@ export default function RecipesPage() {
           onMouseLeave={(e) => (e.currentTarget.style.background = '#2563eb')}
         >
           Search
-        </button>
+        </button> */}
       </section>
+      <section 
+        style={{ 
+          marginTop: 24, 
+          flex: 1,
+          overflowY: 'auto',
+          maxHeight: '60vh',
+          paddingRight: 8 }}>
+          {loading && <p>Loading recipes...</p>}
+          {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
 
+          {!loading && !error && recipes.length === 0 && (
+            <p style={{ color: '#6b7280' }}>No recipes found</p>
+          )}
+
+          {!loading && !error && recipes.length > 0 && (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {recipes.map((recipe) => (
+                <li key={recipe.recipe_id} style={{ marginBottom: 12 }}>
+                    <Link href={`/recipes/${recipe.recipe_id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <div
+                      style={{
+                        background: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 8,
+                        padding: '16px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                        cursor: 'pointer',
+                      }}>
+                        <h3 style={{ margin: 0, fontSize: 18 }}>{recipe.name}</h3>
+                        <p style={{ color: '#6b7280', marginTop: 4 }}>
+                          {recipe.calories} calories • {recipe.protein} g protein • {recipe.carb} g carbs • {recipe.sugar} g sugar • {recipe.fat} g fat
+                        </p>
+                        <p style={{ marginTop: 8 }}>{recipe.description}</p>
+                      </div>
+                    </Link>
+                  </li>
+              ))}
+            </ul>
+          )}
+      </section>
     </section>
   </div>
 
@@ -216,7 +270,6 @@ export default function RecipesPage() {
           <option>Breakfast</option>
           <option>Lunch</option>
           <option>Dinner</option>
-          <option>Snack</option>
           <option>Dessert</option>
         </select>
       </label>
@@ -225,7 +278,7 @@ export default function RecipesPage() {
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Prep Time</span>
         <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}
         value={userPreferences.prepTime}
-        onChange={(e) => setUserPreferences(prev => ({ ...prev, mealType: e.target.value }))}>
+        onChange={(e) => setUserPreferences(prev => ({ ...prev, prepTime: e.target.value }))}>
           <option>All</option>
           <option>15 min</option>
           <option>30 min</option>
@@ -238,7 +291,7 @@ export default function RecipesPage() {
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Origin</span>
         <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}
         value={userPreferences.origin}
-        onChange={(e) => setUserPreferences(prev => ({ ...prev, mealType: e.target.value }))}>
+        onChange={(e) => setUserPreferences(prev => ({ ...prev, origin: e.target.value }))}>
           <option>All</option>
           <option>North American</option>
           <option>Mexican</option>
