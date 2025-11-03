@@ -84,7 +84,7 @@ export default function PostsPage() {
       // Optionally, update the like count locally
       setPosts(posts.map(post =>
         post.post_id === postId
-          ? { ...post, like_count: post.like_count + (data.liked ? -1 : 1) }
+          ? { ...post, like_count: post.like_count + (data.liked ? 1 : -1) }
           : post
       ));
     } catch (e: any) {
