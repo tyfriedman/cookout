@@ -10,6 +10,21 @@ type User = {
   join_date: string | null;
 };
 
+type Post = {
+  post_id: number;
+  usernamefk: string;
+  recipeid: number | null;
+  caption: string;
+  image_url: string | null;
+  like_count: number;
+  post_time: string;
+};
+
+type Recipe = {
+  recipe_id: number;
+  name: string;
+};
+
 function formatTimeSince(dateIso: string | null): string {
   if (!dateIso) return '—';
   const then = new Date(dateIso).getTime();
@@ -28,8 +43,16 @@ function formatTimeSince(dateIso: string | null): string {
 export default function ProfilePage() {
   const [username, setUsername] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [newPost, setNewPost] = useState({ caption: '', image_url: '', recipeid: '' });
+  const [recipeSearch, setRecipeSearch] = useState('');
+  const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('cookout_username') : null;
@@ -43,10 +66,27 @@ export default function ProfilePage() {
         return;
       }
       try {
-        const res = await fetch(`/api/users?username=${encodeURIComponent(username)}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to load user');
-        setUser(data.user as User);
+        const userRes = await fetch(`/api/users?username=${encodeURIComponent(username)}`);
+        
+        if (!userRes.ok) {
+          const userData = await userRes.json();
+          throw new Error(userData.error || 'Failed to load user');
+        }
+        
+        const userData = await userRes.json();
+        setUser(userData.user as User);
+        
+        // Load posts
+        try {
+          const postsRes = await fetch(`/api/posts?username=${encodeURIComponent(username)}`);
+          if (postsRes.ok) {
+            const postsData = await postsRes.json();
+            setPosts(postsData.posts || []);
+          }
+        } catch (postsError) {
+          console.error('Posts API not available:', postsError);
+          setPosts([]);
+        }
       } catch (e: any) {
         setError(e.message || 'Unexpected error');
       } finally {
@@ -56,26 +96,127 @@ export default function ProfilePage() {
     run();
   }, [username]);
 
+  // Load recipes when create post is opened
+  useEffect(() => {
+    if (showCreatePost && recipes.length === 0) {
+      loadRecipes();
+    }
+  }, [showCreatePost]);
+
+  // Filter recipes based on search
+  useEffect(() => {
+    if (recipeSearch.trim() === '') {
+      setFilteredRecipes([]);
+      setShowRecipeDropdown(false);
+    } else {
+      const filtered = recipes.filter(r => 
+        r.name.toLowerCase().includes(recipeSearch.toLowerCase())
+      );
+      setFilteredRecipes(filtered);
+      setShowRecipeDropdown(filtered.length > 0);
+    }
+  }, [recipeSearch, recipes]);
+
+  const loadRecipes = async () => {
+    try {
+      const res = await fetch('/api/posts/recipes');
+      if (res.ok) {
+        const data = await res.json();
+        setRecipes(data.recipes || []);
+      }
+    } catch (e) {
+      console.error('Failed to load recipes:', e);
+    }
+  };
+
   const since = useMemo(() => formatTimeSince(user?.join_date ?? null), [user?.join_date]);
 
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          caption: newPost.caption,
+          image_url: newPost.image_url || null,
+          recipeid: newPost.recipeid ? parseInt(newPost.recipeid) : null,
+        }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create post');
+      
+      setPosts([data.post, ...posts]);
+      setNewPost({ caption: '', image_url: '', recipeid: '' });
+      setRecipeSearch('');
+      setShowCreatePost(false);
+    } catch (e: any) {
+      alert(e.message || 'Failed to create post');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeletePost = async (postId: number) => {
+    if (!username || !confirm('Delete this post?')) return;
+    
+    try {
+      const res = await fetch('/api/posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: postId, username }),
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete post');
+      
+      setPosts(posts.filter(p => p.post_id !== postId));
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete post');
+    }
+  };
+
+  const selectRecipe = (recipe: Recipe) => {
+    setNewPost({ ...newPost, recipeid: recipe.recipe_id.toString() });
+    setRecipeSearch(recipe.name);
+    setShowRecipeDropdown(false);
+  };
+
+  const clearRecipe = () => {
+    setNewPost({ ...newPost, recipeid: '' });
+    setRecipeSearch('');
+  };
+
+  const getRecipeName = (recipeId: number | null) => {
+    if (!recipeId) return null;
+    const recipe = recipes.find(r => r.recipe_id === recipeId);
+    return recipe?.name || `Recipe #${recipeId}`;
+  };
+
   return (
-    <main style={{ minHeight: '100svh', display: 'grid', alignItems: 'center', padding: '6vh 20px' }}>
+    <main style={{ minHeight: '100svh', padding: '6vh 20px 40px', background: '#f9fafb' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', position: 'relative' }}>
         <button
           type="button"
           onClick={() => { window.location.href = '/home'; }}
           aria-label="Back to home"
-          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: 'transparent', border: '1px solid #e5e7eb', cursor: 'pointer' }}
+          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: '#fff', border: '1px solid #e5e7eb', cursor: 'pointer' }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <header style={{ textAlign: 'center', marginBottom: 24 }}>
+        
+        <header style={{ textAlign: 'center', marginBottom: 32 }}>
           <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
         </header>
 
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff' }}>
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff', marginBottom: 24 }}>
           {!username && (
             <div>
               <p style={{ marginTop: 0 }}>You are not logged in.</p>
@@ -95,6 +236,145 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {username && user && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h2 style={{ fontSize: 24, margin: 0 }}>My Posts</h2>
+              <button
+                onClick={() => setShowCreatePost(!showCreatePost)}
+                style={{ padding: '10px 20px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
+              >
+                {showCreatePost ? 'Cancel' : '+ Create Post'}
+              </button>
+            </div>
+
+            {showCreatePost && (
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff', marginBottom: 24 }}>
+                <form onSubmit={handleCreatePost} style={{ display: 'grid', gap: 16 }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, color: '#374151', fontWeight: 500 }}>Caption *</label>
+                    <textarea
+                      value={newPost.caption}
+                      onChange={(e) => setNewPost({ ...newPost, caption: e.target.value })}
+                      required
+                      placeholder="What's on your mind?"
+                      style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, minHeight: 100, fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  
+                  <div style={{ position: 'relative' }}>
+                    <label style={{ display: 'block', marginBottom: 8, color: '#374151', fontWeight: 500 }}>Recipe (optional)</label>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={recipeSearch}
+                        onChange={(e) => setRecipeSearch(e.target.value)}
+                        placeholder="Search recipes by name..."
+                        disabled={!!newPost.recipeid}
+                        style={{ flex: 1, padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, background: newPost.recipeid ? '#f3f4f6' : '#fff' }}
+                      />
+                      {newPost.recipeid && (
+                        <button
+                          type="button"
+                          onClick={clearRecipe}
+                          style={{ padding: '8px 16px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 14 }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {showRecipeDropdown && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #d1d5db', borderRadius: 8, marginTop: 4, maxHeight: 200, overflowY: 'auto', zIndex: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                        {filteredRecipes.map(recipe => (
+                          <div
+                            key={recipe.recipe_id}
+                            onClick={() => selectRecipe(recipe)}
+                            style={{ padding: 12, cursor: 'pointer', borderBottom: '1px solid #e5e7eb' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                          >
+                            <div style={{ fontWeight: 500, color: '#111827' }}>{recipe.name}</div>
+                            <div style={{ fontSize: 12, color: '#6b7280' }}>ID: {recipe.recipe_id}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, color: '#374151', fontWeight: 500 }}>Image URL (optional)</label>
+                    <input
+                      type="url"
+                      value={newPost.image_url}
+                      onChange={(e) => setNewPost({ ...newPost, image_url: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+                    />
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    style={{ padding: '12px 24px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 500 }}
+                  >
+                    {submitting ? 'Posting...' : 'Post'}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: 16 }}>
+              {posts.length === 0 && !loading && (
+                <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 40, background: '#ffffff', textAlign: 'center', color: '#6b7280' }}>
+                  No posts yet. Create your first post!
+                </div>
+              )}
+              
+              {posts.map((post) => (
+                <div key={post.post_id} style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 20, background: '#ffffff' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 4 }}>
+                        {formatTimeSince(post.post_time)}
+                      </div>
+                      <p style={{ margin: 0, color: '#111827', whiteSpace: 'pre-wrap' }}>{post.caption}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeletePost(post.post_id)}
+                      style={{ padding: 8, background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 8, cursor: 'pointer', color: '#b91c1c' }}
+                      aria-label="Delete post"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {post.image_url && (
+                    <img
+                      src={post.image_url}
+                      alt="Post"
+                      style={{ width: '100%', borderRadius: 12, marginTop: 12, maxHeight: 400, objectFit: 'cover' }}
+                    />
+                  )}
+                  
+                  <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 14, color: '#6b7280' }}>
+                    <span>❤️ {post.like_count}</span>
+                    {post.recipeid && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        {getRecipeName(post.recipeid)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </main>
   );
@@ -108,5 +388,3 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-
