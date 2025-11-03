@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
-export async function GET(request: Request, { params }: { params: { recipe_id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ recipe_id: string }> }) {
   try {
-    const url = new URL(request.url);
-    const recipeIdStr = url.pathname.split('/').pop(); // get the last segment
-    const recipeId = Number(recipeIdStr);
+    const { recipe_id } = await context.params;
+    const recipeId = Number(recipe_id);
 
     if (isNaN(recipeId)) {
     return NextResponse.json({ recipe: null, error: 'Invalid recipe ID' }, { status: 400 });
@@ -31,7 +30,9 @@ export async function GET(request: Request, { params }: { params: { recipe_id: s
         fat: data.fat,
         sugar: data.sugar,
         instructions: data.instructions,
-        description: data.recipe_tags?.description || '',
+        description: (Array.isArray(data.recipe_tags)
+          ? data.recipe_tags[0]?.description
+          : (data as any).recipe_tags?.description) || '',
       },
     });
   } catch (err: any) {
