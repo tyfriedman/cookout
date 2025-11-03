@@ -4,19 +4,42 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Recipe = {recipe_id: number, 
             name: string, 
+            prep_time: number,
             instructions: string, 
-            calories: float,
-            fat: float,
-
+            calories: number, 
+            fat: number,
+            carb: number,
+            sugar: number,
+            protein: number
             }
 
 export default function RecipesPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
   const [options, setOptions] = useState<FoodOption[]>([]);
-
+  const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userPreferences, setUserPreferences] = useState({
+    mealType: 'All',
+    prepTime: 'All',
+    origin: 'All',
+    dietary: {
+      vegetarian: false,
+      vegan: false,
+      pescatarian: false,
+      glutenFree: false,
+      nutFree: false,
+      dairyFree: false,
+    },
+    health: {
+      lowCalorie: false,
+      lowFat: false,
+      lowSugar: false,
+      lowSodium: false,
+      lowCarb: false,
+    },
+  });
 
   useEffect(() => {
     const u = window.localStorage.getItem('cookout_username');
@@ -24,98 +47,23 @@ export default function RecipesPage() {
   }, []);
 
   useEffect(() => {
-    if (!username) return;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch('/api/pantry', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to load');
-        setItems(data.items as PantryItem[]);
-      } catch (e: any) {
-        setError(e.message || 'Unexpected error');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [username]);
-
-  const debouncedQuery = useMemo(() => query, [query]);
-
-  useEffect(() => {
-    let abort = false;
-    (async () => {
-      const q = debouncedQuery.trim();
-      if (!q) {
-        setOptions([]);
-        return;
-      }
-      try {
-        const res = await fetch(`/api/food/search?q=${encodeURIComponent(q)}&limit=10`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to search');
-        if (!abort) {
-          setOptions(data.items as FoodOption[]);
-          setHighlightIdx(0);
-        }
-      } catch (e: any) {
-        if (!abort) setOptions([]);
-      }
-    })();
-    return () => {
-      abort = true;
-    };
-  }, [debouncedQuery]);
-
-  async function addFoodById(food_id: number) {
-    if (!username) return;
-    setAdding(true);
-    setError(null);
+    fetchRecipes();
+  }, [searchQuery, userPreferences]);
+  
+  async function fetchRecipes() {
     try {
-      const res = await fetch('/api/pantry/add', {
+      const response = await fetch('/api/recipes/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, food_id }),
+        body: JSON.stringify({
+          keywords: searchQuery,
+          filters: userPreferences,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add');
-      setQuery('');
-      setOptions([]);
-      setShowDropdown(false);
-      // refresh list
-      const res2 = await fetch('/api/pantry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
-      });
-      const data2 = await res2.json();
-      if (res2.ok) setItems(data2.items as PantryItem[]);
-    } catch (e: any) {
-      setError(e.message || 'Unexpected error');
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function deleteFood(food_id: number) {
-    if (!username) return;
-    setError(null);
-    try {
-      const res = await fetch('/api/pantry/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, food_id }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete');
-      setItems((prev) => prev.filter((i) => i.food_id !== food_id));
-    } catch (e: any) {
-      setError(e.message || 'Unexpected error');
+      const recipes = await response.json();
+      if (!response.ok) throw new Error(recipes.error || 'Failed to fetch recipes');
+    } catch (err: any) {
+      console.error(err);
     }
   }
 
@@ -124,23 +72,25 @@ export default function RecipesPage() {
   style={{
     minHeight: '100svh',
     display: 'grid',
-    gridTemplateColumns: '3fr 1fr', // Left = 75%, Right = 25%
+    gridTemplateColumns: '3fr 1fr', 
     gap: '24px',
-    padding: '6vh 40px', // equal padding on both sides
+    padding: '6vh 40px', 
     backgroundColor: '#f9fafb',
     alignItems: 'start',
   }}
 >
-  {/* LEFT SIDE — Recipe Search */}
+  {/* Recipe Search */}
   <div
-    style={{
-      width: '100%',
-      position: 'relative',
-      background: '#fff',
-      borderRadius: 12,
-      padding: '24px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-    }}
+  style={{
+    width: '100%',
+    position: 'relative',
+    background: '#fff',
+    borderRadius: 12,
+    border: '1px solid #e5e7eb',      
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)', 
+    padding: '24px',
+    height: '100%',                   
+  }}
   >
     <button
       type="button"
@@ -165,7 +115,8 @@ export default function RecipesPage() {
     <header style={{ marginBottom: 24, paddingLeft: 44 }}>
       <h1 style={{ fontSize: 28, margin: 0 }}>Recipe Search</h1>
       <p style={{ color: '#6b7280', marginTop: 8 }}>
-        Find hundreds of recipes with what you have on hand
+        Find hundreds of recipes with what you have in your 
+        <a href='/pantry' style={{color: '#3895d3'}}> pantry</a>
       </p>
     </header>
 
@@ -176,23 +127,75 @@ export default function RecipesPage() {
     )}
 
     <section style={{ display: 'grid', gap: 20 }}>
-      {/* 🔍 Search input + dropdown here */}
+      <section style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        {/* Search Input */}
+        <input
+          type="text"
+          placeholder="Search recipes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            flex: 1,
+            padding: '10px 16px',
+            borderRadius: 8,
+            border: '1px solid #d1d5db',
+            fontSize: 16,
+            outline: 'none',
+            transition: 'border-color 0.2s ease',
+          }}
+          onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+          onBlur={(e) => (e.target.style.borderColor = '#d1d5db')}
+        />
+
+        {/* Search Button */}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              setLoading(true);
+              const res = await fetch(`/api/recipes/search?q=${encodeURIComponent(query)}`);
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Search failed');
+              setOptions(data.items);
+            } catch (err: any) {
+              setError(err.message);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          style={{
+            background: '#2563eb',
+            color: 'white',
+            border: 'none',
+            padding: '10px 18px',
+            borderRadius: 8,
+            fontSize: 16,
+            cursor: 'pointer',
+            transition: 'background 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#1e40af')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#2563eb')}
+        >
+          Search
+        </button>
+      </section>
+
     </section>
   </div>
 
   {/* Filters */}
   <aside
-    style={{
-      display: 'grid',
-      gridTemplateRows: 'auto 1fr',
-      background: '#fff',
-      borderRadius: 12,
-      border: '1px solid #e5e7eb',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-      overflow: 'hidden',
-      height: '80vh',
-    }}
+  style={{
+    display: 'grid',
+    gridTemplateRows: 'auto 1fr',
+    background: '#fff',
+    borderRadius: 12,
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+    overflow: 'visible',      
+  }}
   >
+
     {/* FILTERS */}
     <div
       style={{
@@ -204,7 +207,9 @@ export default function RecipesPage() {
       <h2 style={{ fontSize: 20, marginBottom: 12 }}>Filters</h2>
       <label style={{ display: 'block', marginBottom: 8 }}>
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Meal Type</span>
-        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}>
+        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}
+        value={userPreferences.mealType}
+        onChange={(e) => setUserPreferences(prev => ({ ...prev, mealType: e.target.value }))}>
           <option>All</option>
           <option>Main Dish</option>
           <option>Side Dish</option>
@@ -218,7 +223,9 @@ export default function RecipesPage() {
 
       <label style={{ display: 'block', marginBottom: 8 }}>
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Prep Time</span>
-        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}>
+        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}
+        value={userPreferences.prepTime}
+        onChange={(e) => setUserPreferences(prev => ({ ...prev, mealType: e.target.value }))}>
           <option>All</option>
           <option>15 min</option>
           <option>30 min</option>
@@ -229,7 +236,9 @@ export default function RecipesPage() {
 
       <label style={{ display: 'block', marginBottom: 8 }}>
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Origin</span>
-        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}>
+        <select style={{ width: '100%', padding: 8, borderRadius: 8, border: '1px solid #d1d5db' }}
+        value={userPreferences.origin}
+        onChange={(e) => setUserPreferences(prev => ({ ...prev, mealType: e.target.value }))}>
           <option>All</option>
           <option>North American</option>
           <option>Mexican</option>
@@ -240,27 +249,39 @@ export default function RecipesPage() {
       <div style={{ marginBottom: 8 }}>
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Dietary Restrictions</span>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.dietary.vegetarian}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, vegetarian: e.target.checked }}))}/>
           Vegetarian
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.dietary.vegan}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, vegan: e.target.checked }}))}/>
           Vegan
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.dietary.pescatarian}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, pescatarian: e.target.checked }}))}/>
           Pescatarian
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.dietary.glutenFree}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, glutenFree: e.target.checked }}))}/>
           Gluten Free
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }}  
+          checked={userPreferences.dietary.nutFree}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, nutFree: e.target.checked }}))}/>
           Nut Free
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.dietary.dairyFree}
+          onChange={(e) => setUserPreferences(prev => ({...prev, dietary: { ...prev.dietary, dairyFree: e.target.checked }}))}/>
           Dairy Free
         </label>
       </div>
@@ -268,23 +289,33 @@ export default function RecipesPage() {
       <div style={{ marginBottom: 8 }}>
         <span style={{ display: 'block', color: '#6b7280', marginBottom: 4 }}>Health Preferences</span>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.health.lowCalorie}
+          onChange={(e) => setUserPreferences(prev => ({...prev, health: { ...prev.health, lowCalorie: e.target.checked }}))}/>
           Low Calorie
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.health.lowFat}
+          onChange={(e) => setUserPreferences(prev => ({...prev, health: { ...prev.health, lowFat: e.target.checked }}))}/>
           Low Fat
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.health.lowSugar}
+          onChange={(e) => setUserPreferences(prev => ({...prev, health: { ...prev.health, lowSugar: e.target.checked }}))}/>
           Low Sugar
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.health.lowSodium}
+          onChange={(e) => setUserPreferences(prev => ({...prev, health: { ...prev.health, lowSodium: e.target.checked }}))}/>
           Low Sodium
         </label>
         <label style={{ display: 'block', marginBottom: 4 }}>
-          <input type="checkbox" style={{ marginRight: 8 }} />
+          <input type="checkbox" style={{ marginRight: 8 }} 
+          checked={userPreferences.health.lowCarb}
+          onChange={(e) => setUserPreferences(prev => ({...prev, health: { ...prev.health, lowCarb: e.target.checked }}))}/>
           Low Carb
         </label>
       </div>
