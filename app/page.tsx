@@ -11,22 +11,7 @@ export default function Page() {
           </p>
         </header>
 
-        <section style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: 24,
-        }}>
-          <div style={{
-            border: '1px solid #e5e7eb',
-            borderRadius: 16,
-            padding: 24,
-            background: '#ffffff',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-          }}>
-            <h2 style={{ fontSize: 20, marginTop: 0, marginBottom: 12 }}>Get started</h2>
-            <AuthForm />
-          </div>
-        </section>
+        <AuthForm />
       </div>
     </main>
   );

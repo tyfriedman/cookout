@@ -56,19 +56,20 @@ export default function AuthForm() {
 
   return (
     <div style={{ maxWidth: 420, margin: '0 auto' }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 24, justifyContent: 'center' }}>
         <button
           type="button"
           onClick={() => setMode('signup')}
           aria-pressed={mode === 'signup'}
           style={{
-            flex: 1,
-            padding: '10px 12px',
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            background: mode === 'signup' ? '#111827' : '#ffffff',
-            color: mode === 'signup' ? '#ffffff' : '#111827',
+            padding: 0,
+            border: 'none',
+            background: 'none',
+            color: mode === 'signup' ? '#111827' : '#6b7280',
             cursor: 'pointer',
+            fontSize: 16,
+            fontWeight: mode === 'signup' ? 600 : 400,
+            textDecoration: 'none',
           }}
         >
           Sign up
@@ -78,76 +79,73 @@ export default function AuthForm() {
           onClick={() => setMode('login')}
           aria-pressed={mode === 'login'}
           style={{
-            flex: 1,
-            padding: '10px 12px',
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            background: mode === 'login' ? '#111827' : '#ffffff',
-            color: mode === 'login' ? '#ffffff' : '#111827',
+            padding: 0,
+            border: 'none',
+            background: 'none',
+            color: mode === 'login' ? '#111827' : '#6b7280',
             cursor: 'pointer',
+            fontSize: 16,
+            fontWeight: mode === 'login' ? 600 : 400,
+            textDecoration: 'none',
           }}
         >
           Log in
         </button>
       </div>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'grid', gap: 4 }}>
-          <label htmlFor="username" style={{ fontSize: 14 }}>Username</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autoComplete="username"
-            required
-            minLength={2}
-            maxLength={50}
-            pattern="[A-Za-z0-9_\-]{2,25}"
-            title="Use 2–25 characters: letters, numbers, underscores, or hyphens"
-            placeholder="yourname"
-            style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-          />
-        </div>
+      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 16 }}>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          required
+          minLength={2}
+          maxLength={50}
+          pattern="[A-Za-z0-9_\-]{2,25}"
+          title="Use 2–25 characters: letters, numbers, underscores, or hyphens"
+          placeholder="Username"
+          style={{ padding: '12px', border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, background: 'transparent', fontSize: 16 }}
+        />
 
         {mode === 'signup' && (
           <>
-            <div style={{ display: 'grid', gap: 4 }}>
-              <label htmlFor="firstname" style={{ fontSize: 14 }}>First name</label>
-              <input id="firstname" name="firstname" type="text" placeholder="Jane" style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }} />
-            </div>
-            <div style={{ display: 'grid', gap: 4 }}>
-              <label htmlFor="lastname" style={{ fontSize: 14 }}>Last name</label>
-              <input id="lastname" name="lastname" type="text" placeholder="Doe" style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }} />
-            </div>
-            <div style={{ display: 'grid', gap: 4 }}>
-              <label htmlFor="email" style={{ fontSize: 14 }}>Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder="jane@example.com"
-                style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-              />
-            </div>
+            <input
+              id="firstname"
+              name="firstname"
+              type="text"
+              placeholder="First name"
+              style={{ padding: '12px', border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, background: 'transparent', fontSize: 16 }}
+            />
+            <input
+              id="lastname"
+              name="lastname"
+              type="text"
+              placeholder="Last name"
+              style={{ padding: '12px', border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, background: 'transparent', fontSize: 16 }}
+            />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="Email"
+              style={{ padding: '12px', border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, background: 'transparent', fontSize: 16 }}
+            />
           </>
         )}
 
-        <div style={{ display: 'grid', gap: 4 }}>
-          <label htmlFor="password" style={{ fontSize: 14 }}>Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            required
-            minLength={8}
-            placeholder="••••••••"
-            style={{ padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: 8 }}
-          />
-          <small style={{ color: '#6b7280' }}>Minimum 8 characters.</small>
-        </div>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+          required
+          minLength={8}
+          placeholder="Password"
+          style={{ padding: '12px', border: 'none', borderBottom: '1px solid #e5e7eb', borderRadius: 0, background: 'transparent', fontSize: 16 }}
+        />
 
         {error && <div role="alert" style={{ color: '#b91c1c', fontSize: 14 }}>{error}</div>}
         {success && <div role="status" style={{ color: '#065f46', fontSize: 14 }}>{success}</div>}
@@ -157,12 +155,13 @@ export default function AuthForm() {
           disabled={loading}
           style={{
             marginTop: 8,
-            padding: '12px 16px',
-            borderRadius: 8,
-            border: '1px solid #111827',
+            padding: '12px',
+            border: 'none',
             background: '#111827',
             color: '#ffffff',
             cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: 16,
+            borderRadius: 0,
           }}
         >
           {loading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Log in'}
