@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rec
     const supabase = getSupabaseServerClient();
     const { data, error } = await supabase
     .from('recipes')
-    .select('recipe_id, name, calories, protein, carb, fat, sugar, instructions, recipe_tags(*)')
+    .select('recipe_id, name, calories, protein, carb, fat, sugar, instructions, recipe_tags(*), i1, i2, i3, i4, i5, i6, i7, i8, i9, i0')
     .eq('recipe_id', recipeId)
     .single();
 
@@ -33,6 +33,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rec
         description: (Array.isArray(data.recipe_tags)
           ? data.recipe_tags[0]?.description
           : (data as any).recipe_tags?.description) || '',
+        ingredients: [data.i1, data.i2, data.i3, data.i4, data.i5, data.i6, data.i7, data.i8, data.i9, data.i0],
       },
     });
   } catch (err: any) {

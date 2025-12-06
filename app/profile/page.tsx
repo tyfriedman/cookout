@@ -8,6 +8,7 @@ type User = {
   lastname: string | null;
   email: string | null;
   join_date: string | null;
+  profile_picture_url: string | null;
 };
 
 type Post = {
@@ -18,6 +19,7 @@ type Post = {
   image_url: string | null;
   like_count: number;
   post_time: string;
+  profile_picture_url?: string | null;
 };
 
 type Recipe = {
@@ -76,6 +78,12 @@ export default function ProfilePage() {
   const [recipeSearch, setRecipeSearch] = useState('');
   const [showRecipeDropdown, setShowRecipeDropdown] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedProfilePic, setSelectedProfilePic] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null);
+  const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('cookout_username') : null;
@@ -98,6 +106,11 @@ export default function ProfilePage() {
         
         const userData = await userRes.json();
         setUser(userData.user as User);
+        
+        // Set profile picture preview if user has one
+        if (userData.user?.profile_picture_url) {
+          setProfilePicPreview(userData.user.profile_picture_url);
+        }
         
         // Load posts
         try {
@@ -154,11 +167,77 @@ export default function ProfilePage() {
 
   const joinDate = useMemo(() => formatJoinDate(user?.join_date ?? null), [user?.join_date]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please select an image file (JPEG, PNG, GIF, or WebP).');
+      return;
+    }
+  
+    // Validate file size (max 5MB)
+    const maxSize = 50 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('File too large. Maximum size is 5MB.');
+      return;
+    }
+  
+    setSelectedImage(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setNewPost({ ...newPost, image_url: '' });
+    // Reset file input
+    const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username) return;
     
     setSubmitting(true);
+    let imageUrl = newPost.image_url;
+  
+    // Upload image if a file is selected
+    if (selectedImage) {
+      setUploadingImage(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedImage);
+  
+        const uploadRes = await fetch('/api/posts/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+  
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          throw new Error(uploadData.error || 'Failed to upload image');
+        }
+  
+        imageUrl = uploadData.url;
+      } catch (e: any) {
+        setUploadingImage(false);
+        setSubmitting(false);
+        alert(e.message || 'Failed to upload image');
+        return;
+      }
+      setUploadingImage(false);
+    }
+    
     try {
       const res = await fetch('/api/posts', {
         method: 'POST',
@@ -166,7 +245,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           username,
           caption: newPost.caption,
-          image_url: newPost.image_url || null,
+          image_url: imageUrl || null,
           recipeid: newPost.recipeid ? parseInt(newPost.recipeid) : null,
         }),
       });
@@ -177,7 +256,12 @@ export default function ProfilePage() {
       setPosts([data.post, ...posts]);
       setNewPost({ caption: '', image_url: '', recipeid: '' });
       setRecipeSearch('');
+      setSelectedImage(null);
+      setImagePreview(null);
       setShowCreatePost(false);
+      // Reset file input
+      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     } catch (e: any) {
       alert(e.message || 'Failed to create post');
     } finally {
@@ -314,23 +398,80 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', marginBottom: 8, color: '#374151', fontWeight: 500 }}>Image URL (optional)</label>
-                    <input
-                      type="url"
-                      value={newPost.image_url}
-                      onChange={(e) => setNewPost({ ...newPost, image_url: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
-                      style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
-                    />
+                    <label style={{ display: 'block', marginBottom: 8, color: '#374151', fontWeight: 500 }}>Image (optional)</label>
+                    
+                    {imagePreview ? (
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            style={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 8, border: '1px solid #d1d5db' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            style={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              padding: '6px 12px',
+                              background: 'rgba(0, 0, 0, 0.7)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontSize: 12,
+                              fontWeight: 500
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginBottom: 12 }}>
+                        <input
+                          id="image-upload"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                          onChange={handleImageSelect}
+                          style={{ width: '100%', padding: 12, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+                        />
+                        <p style={{ margin: '8px 0 0 0', fontSize: 12, color: '#6b7280' }}>
+                          Upload an image (JPEG, PNG, GIF, or WebP, max 50MB)
+                        </p>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e5e7eb' }}>
+                      <label style={{ display: 'block', marginBottom: 8, color: '#6b7280', fontWeight: 400, fontSize: 13 }}>Or enter image URL:</label>
+                      <input
+                        type="url"
+                        value={newPost.image_url}
+                        onChange={(e) => setNewPost({ ...newPost, image_url: e.target.value })}
+                        placeholder="https://example.com/image.jpg"
+                        disabled={!!selectedImage}
+                        style={{ 
+                          width: '100%', 
+                          padding: 12, 
+                          border: '1px solid #d1d5db', 
+                          borderRadius: 8, 
+                          fontSize: 14,
+                          background: selectedImage ? '#f3f4f6' : '#fff',
+                          opacity: selectedImage ? 0.6 : 1
+                        }}
+                      />
+                    </div>
                   </div>
                   
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    style={{ padding: '12px 24px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 500 }}
-                  >
-                    {submitting ? 'Posting...' : 'Post'}
-                  </button>
+                <button
+                  type="submit"
+                  disabled={submitting || uploadingImage}
+                  style={{ padding: '12px 24px', background: '#111827', color: '#fff', border: 'none', borderRadius: 8, cursor: (submitting || uploadingImage) ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 500 }}
+                >
+                  {uploadingImage ? 'Uploading image...' : submitting ? 'Posting...' : 'Post'}
+                </button>
                 </form>
               </div>
             )}
@@ -363,11 +504,13 @@ export default function ProfilePage() {
                   </div>
                   
                   {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      style={{ width: '100%', borderRadius: 12, marginTop: 12, maxHeight: 400, objectFit: 'cover' }}
-                    />
+                    <div style={{ width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', borderRadius: 12, marginTop: 12 }}>
+                      <img
+                        src={post.image_url}
+                        alt="Post"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
                   )}
                   
                   <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 14, color: '#6b7280' }}>

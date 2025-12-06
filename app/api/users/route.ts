@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from('users')
-    .select('username, firstname, lastname, email, join_date')
+    .select('username, firstname, lastname, email, join_date, profile_picture_url')
     .eq('username', username)
     .maybeSingle();
 
