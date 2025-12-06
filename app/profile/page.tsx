@@ -322,12 +322,138 @@ export default function ProfilePage() {
           {username && loading && <p style={{ margin: 0 }}>Loading…</p>}
           {username && error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
           {username && user && (
-            <div style={{ display: 'grid', gap: 12 }}>
-              <Row label="Username" value={user.username} />
-              <Row label="First name" value={user.firstname || '—'} />
-              <Row label="Last name" value={user.lastname || '—'} />
-              <Row label="Email" value={user.email || '—'} />
-              <Row label="Joined" value={joinDate} />
+            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+              {/* Profile Information */}
+              <div style={{ display: 'grid', gap: 12, flex: 1 }}>
+                <Row label="Username" value={user.username} />
+                <Row label="First name" value={user.firstname || '—'} />
+                <Row label="Last name" value={user.lastname || '—'} />
+                <Row label="Email" value={user.email || '—'} />
+                <Row label="Joined" value={joinDate} />
+              </div>
+
+              {/* Profile Picture Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0, marginRight: 100}}>
+                <div style={{ 
+                  width: 100, 
+                  height: 100, 
+                  borderRadius: '50%', 
+                  background: (profilePicPreview || user.profile_picture_url)
+                    ? 'none' 
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                  display: 'grid', 
+                  placeItems: 'center', 
+                  color: '#fff', 
+                  fontSize: 40,
+                  fontWeight: 600,
+                  overflow: 'hidden',
+                  border: '2px solid #e5e7eb'
+                }}>
+                  {(profilePicPreview || user.profile_picture_url) ? (
+                    <img 
+                      src={profilePicPreview || user.profile_picture_url || ''} 
+                      alt="Profile" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    user.username.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <input
+                    id="profile-pic-upload"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                        if (!allowedTypes.includes(file.type)) {
+                          alert('Invalid file type. Please select an image file.');
+                          return;
+                        }
+                        const maxSize = 5 * 1024 * 1024; // 5MB
+                        if (file.size > maxSize) {
+                          alert('File too large. Maximum size is 5MB.');
+                          return;
+                        }
+                        setSelectedProfilePic(file);
+                        
+                        // Show preview immediately
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setProfilePicPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                        
+                        // Upload the profile picture
+                        setUploadingProfilePic(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          
+                          const uploadRes = await fetch('/api/users/upload-profile-picture', {
+                            method: 'POST',
+                            body: formData,
+                          });
+                          
+                          const uploadData = await uploadRes.json();
+                          if (!uploadRes.ok) {
+                            throw new Error(uploadData.error || 'Failed to upload image');
+                          }
+                          
+                          // Save profile picture URL to database
+                          if (username) {
+                            const saveRes = await fetch('/api/users/update-profile-picture', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                username,
+                                profile_picture_url: uploadData.url,
+                              }),
+                            });
+                            
+                            const saveData = await saveRes.json();
+                            if (!saveRes.ok) {
+                              throw new Error(saveData.error || 'Failed to save profile picture');
+                            }
+                            
+                            // Update user state with new profile picture URL
+                            setUser({ ...user, profile_picture_url: uploadData.url });
+                          }
+                        } catch (err: any) {
+                          alert(err.message || 'Failed to upload profile picture');
+                          // Revert preview on error
+                          setProfilePicPreview(user.profile_picture_url || null);
+                        } finally {
+                          setUploadingProfilePic(false);
+                        }
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fileInput = document.getElementById('profile-pic-upload') as HTMLInputElement;
+                      fileInput?.click();
+                    }}
+                    disabled={uploadingProfilePic}
+                    style={{
+                      padding: '6px 16px',
+                      fontSize: 12,
+                      background: uploadingProfilePic ? '#9ca3af' : '#3b82f6',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: uploadingProfilePic ? 'not-allowed' : 'pointer',
+                      fontWeight: 500
+                    }}
+                  >
+                    {uploadingProfilePic ? 'Uploading...' : 'Change photo'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

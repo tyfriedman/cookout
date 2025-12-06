@@ -118,59 +118,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         justifyContent: 'space-between'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Icon name="fire" />
+          <img 
+            src="/favicon.ico" 
+            alt="Cookout" 
+            style={{ width: 32, height: 32 }}
+          />
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#111827' }}>Cookout</h1>
         </div>
-        
-        {isLoggedIn && username ? (
-          <button
-            onClick={handleSignOut}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '12px 20px',
-              background: 'transparent',
-              border: '1px solid #e5e7eb',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontSize: 18,
-              fontWeight: 500,
-              color: '#111827'
-            }}
-          >
-            <div style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'grid',
-              placeItems: 'center',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: 16
-            }}>
-              {username.charAt(0).toUpperCase()}
-            </div>
-            <span>Sign Out</span>
-          </button>
-        ) : (
-          <button
-            onClick={handleSignIn}
-            style={{
-              padding: '12px 24px',
-              background: '#111827',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontSize: 18,
-              fontWeight: 500
-            }}
-          >
-            Sign In
-          </button>
-        )}
       </header>
 
       {/* Main Content */}
@@ -191,8 +145,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         left: 0,
         right: 0,
         background: '#ffffff',
-        borderTop: '1px solid #e5e7eb',
-        padding: '12px 0',
+        borderTop: '1px solid #f3f4f6',
+        padding: '6px 0',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
