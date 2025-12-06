@@ -174,25 +174,13 @@ export default function PostsPage() {
   }
 
   return (
-    <main style={{ minHeight: '100svh', padding: '6vh 20px', background: '#fafafa' }}>
-      <div style={{ maxWidth: 640, margin: '0 auto', width: '100%' }}>
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/home'; }}
-          aria-label="Back to home"
-          style={{ marginBottom: 16, padding: 8, borderRadius: 8, background: '#fff', border: '1px solid #e5e7eb', cursor: 'pointer' }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-
-        <header style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 28, margin: 0 }}>Feed</h1>
-          {!username && (
-            <p style={{ color: '#b91c1c', marginTop: 8 }}>Not logged in</p>
-          )}
-        </header>
+    <div>
+      <header style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Feed</h1>
+        {!username && (
+          <p style={{ color: '#b91c1c', marginTop: 8 }}>Not logged in</p>
+        )}
+      </header>
 
         {error && (
           <div style={{ padding: 12, marginBottom: 16, background: '#fee', border: '1px solid #fcc', borderRadius: 8, color: '#b91c1c' }}>
@@ -312,7 +300,6 @@ export default function PostsPage() {
             ))}
           </div>
         )}
-      </div>
-    </main>
+    </div>
   );
 }

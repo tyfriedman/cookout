@@ -25,6 +25,29 @@ type Recipe = {
   name: string;
 };
 
+function formatJoinDate(dateIso: string | null): string {
+  if (!dateIso) return '—';
+  const then = new Date(dateIso);
+  const now = new Date();
+  
+  // Reset time to midnight for both dates to compare just the days
+  const thenDate = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const diffTime = nowDate.getTime() - thenDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Joined today';
+  if (diffDays === 1) return 'Joined one day ago';
+  if (diffDays === 2) return 'Joined two days ago';
+  if (diffDays === 3) return 'Joined three days ago';
+  if (diffDays === 4) return 'Joined four days ago';
+  if (diffDays === 5) return 'Joined five days ago';
+  if (diffDays === 6) return 'Joined six days ago';
+  if (diffDays === 7) return 'Joined one week ago';
+  return `Joined ${diffDays} days ago`;
+}
+
 function formatTimeSince(dateIso: string | null): string {
   if (!dateIso) return '—';
   const then = new Date(dateIso).getTime();
@@ -129,7 +152,7 @@ export default function ProfilePage() {
     }
   };
 
-  const since = useMemo(() => formatTimeSince(user?.join_date ?? null), [user?.join_date]);
+  const joinDate = useMemo(() => formatJoinDate(user?.join_date ?? null), [user?.join_date]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,22 +222,10 @@ export default function ProfilePage() {
   };
 
   return (
-    <main style={{ minHeight: '100svh', padding: '6vh 20px 40px', background: '#f9fafb' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', position: 'relative' }}>
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/home'; }}
-          aria-label="Back to home"
-          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: '#fff', border: '1px solid #e5e7eb', cursor: 'pointer' }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        
-        <header style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
-        </header>
+    <div>
+      <header style={{ textAlign: 'center', marginBottom: 32 }}>
+        <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
+      </header>
 
         <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff', marginBottom: 24 }}>
           {!username && (
@@ -232,7 +243,7 @@ export default function ProfilePage() {
               <Row label="First name" value={user.firstname || '—'} />
               <Row label="Last name" value={user.lastname || '—'} />
               <Row label="Email" value={user.email || '—'} />
-              <Row label="Joined" value={since} />
+              <Row label="Joined" value={joinDate} />
             </div>
           )}
         </div>
@@ -375,8 +386,7 @@ export default function ProfilePage() {
             </div>
           </>
         )}
-      </div>
-    </main>
+    </div>
   );
 }
 

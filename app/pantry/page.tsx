@@ -186,21 +186,10 @@ export default function PantryPage() {
 
 
   return (
-    <main style={{ minHeight: '100svh', display: 'grid', alignItems: 'start', padding: '6vh 20px' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', width: '100%', position: 'relative' }}>
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/home'; }}
-          aria-label="Back to home"
-          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: 'transparent', border: '1px solid #e5e7eb', cursor: 'pointer' }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <header style={{ marginBottom: 24, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 28, margin: 0 }}>Pantry</h1>
-        </header>
+    <div>
+      <header style={{ marginBottom: 24, textAlign: 'center' }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Pantry</h1>
+      </header>
 
         {!username && (
           <div style={{ color: '#b91c1c', marginBottom: 16 }}>No user found. Please log in.</div>
@@ -393,8 +382,7 @@ export default function PantryPage() {
             )}
           </div>
         </section>
-      </div>
-    </main>
+    </div>
   );
 }
 
