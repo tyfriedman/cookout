@@ -34,7 +34,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ comments: comments || [] }, { status: 200 });
+    // Fetch profile pictures for all unique user_ids
+    const userIds = [...new Set((comments || []).map((comment: any) => comment.user_id))];
+    const { data: usersData } = await supabase
+      .from('users')
+      .select('username, profile_picture_url')
+      .in('username', userIds);
+
+    const profilePicturesMap = new Map(
+      (usersData || []).map((user: any) => [user.username, user.profile_picture_url])
+    );
+
+    // Add profile picture URLs to comments
+    const commentsWithProfilePics = (comments || []).map((comment: any) => ({
+      ...comment,
+      profile_picture_url: profilePicturesMap.get(comment.user_id) || null,
+    }));
+
+    return NextResponse.json({ comments: commentsWithProfilePics }, { status: 200 });
   } catch (error) {
     console.error('Unexpected error fetching comments:', error);
     return NextResponse.json(
