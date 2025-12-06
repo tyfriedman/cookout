@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Ubuntu, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import AppLayout from "./components/AppLayout";
 
 const ubuntu = Ubuntu({
   variable: "--font-ubuntu",
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${ubuntu.variable} ${geistMono.variable} antialiased`}>
-        {children}
+        <AppLayout>{children}</AppLayout>
       </body>
     </html>
   );

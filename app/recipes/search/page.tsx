@@ -77,14 +77,11 @@ export default function RecipesPage() {
   }
 
   return (
-<main
+<div
   style={{
-    minHeight: '100svh',
     display: 'grid',
     gridTemplateColumns: '3fr 1fr', 
     gap: '24px',
-    padding: '6vh 40px', 
-    backgroundColor: '#f9fafb',
     alignItems: 'start',
   }}
 >
@@ -101,27 +98,7 @@ export default function RecipesPage() {
     height: '100%',                   
   }}
   >
-    <button
-      type="button"
-      onClick={() => { window.location.href = '/home'; }}
-      aria-label="Back to home"
-      style={{
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        padding: 8,
-        borderRadius: 8,
-        background: 'transparent',
-        border: '1px solid #e5e7eb',
-        cursor: 'pointer',
-      }}
-    >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-    </button>
-
-    <header style={{ marginBottom: 24, paddingLeft: 44 }}>
+    <header style={{ marginBottom: 24 }}>
       <h1 style={{ fontSize: 28, margin: 0 }}>Recipe Search</h1>
       <p style={{ color: '#6b7280', marginTop: 8 }}>
         Find hundreds of recipes with what you have in your 
@@ -448,9 +425,7 @@ export default function RecipesPage() {
       )}
     </div> */}
   </aside>
-</main>
-
-
+</div>
   )
 }
 

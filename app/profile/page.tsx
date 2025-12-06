@@ -27,6 +27,29 @@ type Recipe = {
   name: string;
 };
 
+function formatJoinDate(dateIso: string | null): string {
+  if (!dateIso) return '—';
+  const then = new Date(dateIso);
+  const now = new Date();
+  
+  // Reset time to midnight for both dates to compare just the days
+  const thenDate = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const diffTime = nowDate.getTime() - thenDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Joined today';
+  if (diffDays === 1) return 'Joined one day ago';
+  if (diffDays === 2) return 'Joined two days ago';
+  if (diffDays === 3) return 'Joined three days ago';
+  if (diffDays === 4) return 'Joined four days ago';
+  if (diffDays === 5) return 'Joined five days ago';
+  if (diffDays === 6) return 'Joined six days ago';
+  if (diffDays === 7) return 'Joined one week ago';
+  return `Joined ${diffDays} days ago`;
+}
+
 function formatTimeSince(dateIso: string | null): string {
   if (!dateIso) return '—';
   const then = new Date(dateIso).getTime();
@@ -142,7 +165,7 @@ export default function ProfilePage() {
     }
   };
 
-  const since = useMemo(() => formatTimeSince(user?.join_date ?? null), [user?.join_date]);
+  const joinDate = useMemo(() => formatJoinDate(user?.join_date ?? null), [user?.join_date]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -283,22 +306,10 @@ export default function ProfilePage() {
   };
 
   return (
-    <main style={{ minHeight: '100svh', padding: '6vh 20px 40px', background: '#f9fafb' }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', width: '100%', position: 'relative' }}>
-        <button
-          type="button"
-          onClick={() => { window.location.href = '/home'; }}
-          aria-label="Back to home"
-          style={{ position: 'absolute', top: 0, left: 0, padding: 8, borderRadius: 8, background: '#fff', border: '1px solid #e5e7eb', cursor: 'pointer' }}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        
-        <header style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
-        </header>
+    <div>
+      <header style={{ textAlign: 'center', marginBottom: 32 }}>
+        <h1 style={{ fontSize: 32, lineHeight: 1.2, margin: 0 }}>Profile</h1>
+      </header>
 
         <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff', marginBottom: 24 }}>
           {!username && (
@@ -311,138 +322,12 @@ export default function ProfilePage() {
           {username && loading && <p style={{ margin: 0 }}>Loading…</p>}
           {username && error && <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
           {username && user && (
-            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-              {/* Profile Information */}
-              <div style={{ display: 'grid', gap: 12, flex: 1 }}>
-                <Row label="Username" value={user.username} />
-                <Row label="First name" value={user.firstname || '—'} />
-                <Row label="Last name" value={user.lastname || '—'} />
-                <Row label="Email" value={user.email || '—'} />
-                <Row label="Joined" value={since} />
-              </div>
-
-              {/* Profile Picture Section */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0, marginRight: 100}}>
-                <div style={{ 
-                  width: 100, 
-                  height: 100, 
-                  borderRadius: '50%', 
-                  background: (profilePicPreview || user.profile_picture_url)
-                    ? 'none' 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                  display: 'grid', 
-                  placeItems: 'center', 
-                  color: '#fff', 
-                  fontSize: 40,
-                  fontWeight: 600,
-                  overflow: 'hidden',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  {(profilePicPreview || user.profile_picture_url) ? (
-                    <img 
-                      src={profilePicPreview || user.profile_picture_url || ''} 
-                      alt="Profile" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    user.username.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <div>
-                  <input
-                    id="profile-pic-upload"
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                        if (!allowedTypes.includes(file.type)) {
-                          alert('Invalid file type. Please select an image file.');
-                          return;
-                        }
-                        const maxSize = 5 * 1024 * 1024; // 5MB
-                        if (file.size > maxSize) {
-                          alert('File too large. Maximum size is 5MB.');
-                          return;
-                        }
-                        setSelectedProfilePic(file);
-                        
-                        // Show preview immediately
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setProfilePicPreview(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                        
-                        // Upload the profile picture
-                        setUploadingProfilePic(true);
-                        try {
-                          const formData = new FormData();
-                          formData.append('file', file);
-                          
-                          const uploadRes = await fetch('/api/users/upload-profile-picture', {
-                            method: 'POST',
-                            body: formData,
-                          });
-                          
-                          const uploadData = await uploadRes.json();
-                          if (!uploadRes.ok) {
-                            throw new Error(uploadData.error || 'Failed to upload image');
-                          }
-                          
-                          // Save profile picture URL to database
-                          if (username) {
-                            const saveRes = await fetch('/api/users/update-profile-picture', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                username,
-                                profile_picture_url: uploadData.url,
-                              }),
-                            });
-                            
-                            const saveData = await saveRes.json();
-                            if (!saveRes.ok) {
-                              throw new Error(saveData.error || 'Failed to save profile picture');
-                            }
-                            
-                            // Update user state with new profile picture URL
-                            setUser({ ...user, profile_picture_url: uploadData.url });
-                          }
-                        } catch (err: any) {
-                          alert(err.message || 'Failed to upload profile picture');
-                          // Revert preview on error
-                          setProfilePicPreview(user.profile_picture_url || null);
-                        } finally {
-                          setUploadingProfilePic(false);
-                        }
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const fileInput = document.getElementById('profile-pic-upload') as HTMLInputElement;
-                      fileInput?.click();
-                    }}
-                    disabled={uploadingProfilePic}
-                    style={{
-                      padding: '6px 16px',
-                      fontSize: 12,
-                      background: uploadingProfilePic ? '#9ca3af' : '#3b82f6',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 6,
-                      cursor: uploadingProfilePic ? 'not-allowed' : 'pointer',
-                      fontWeight: 500
-                    }}
-                  >
-                    {uploadingProfilePic ? 'Uploading...' : 'Change photo'}
-                  </button>
-                </div>
-              </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <Row label="Username" value={user.username} />
+              <Row label="First name" value={user.firstname || '—'} />
+              <Row label="Last name" value={user.lastname || '—'} />
+              <Row label="Email" value={user.email || '—'} />
+              <Row label="Joined" value={joinDate} />
             </div>
           )}
         </div>
@@ -644,8 +529,7 @@ export default function ProfilePage() {
             </div>
           </>
         )}
-      </div>
-    </main>
+    </div>
   );
 }
 
