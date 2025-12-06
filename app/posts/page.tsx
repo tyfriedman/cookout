@@ -11,6 +11,7 @@ type Post = {
   image_url: string;
   like_count: number;
   post_time: string;
+  profile_picture_url?: string | null;
 };
 
 type Comment = {
@@ -18,6 +19,7 @@ type Comment = {
   user_id: string;
   comment_time: string;
   content: string;
+  profile_picture_url?: string | null;
 };
 
 export default function PostsPage() {
@@ -211,8 +213,29 @@ export default function PostsPage() {
                 {/* Post Header */}
                 <header style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 600 }}>
-                      {post.usernamefk.charAt(0).toUpperCase()}
+                    <div style={{ 
+                      width: 40, 
+                      height: 40, 
+                      borderRadius: '50%', 
+                      background: post.profile_picture_url 
+                        ? 'none' 
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                      display: 'grid', 
+                      placeItems: 'center', 
+                      color: '#fff', 
+                      fontWeight: 600,
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      {post.profile_picture_url ? (
+                        <img 
+                          src={post.profile_picture_url} 
+                          alt={post.usernamefk}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        post.usernamefk.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div>
                       <p style={{ margin: 0, fontWeight: 600 }}>{post.usernamefk}</p>
@@ -225,11 +248,11 @@ export default function PostsPage() {
 
                 {/* Post Image */}
                 {post.image_url && (
-                  <div>
+                  <div style={{ width: '100%', aspectRatio: '1 / 1', overflow: 'hidden' }}>
                     <img 
                       src={post.image_url} 
                       alt="Post" 
-                      style={{ width: '100%', height: 'auto', display: 'block' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
                   </div>
                 )}
@@ -274,9 +297,36 @@ export default function PostsPage() {
                     <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 12, marginTop: 12 }}>
                       <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
                         {expandedComments[post.post_id]?.map((comment) => (
-                          <div key={`${comment.post_id}-${comment.user_id}-${comment.comment_time}`} style={{ fontSize: 14 }}>
-                            <span style={{ fontWeight: 600 }}>{comment.user_id}</span>{' '}
-                            <span style={{ color: '#374151' }}>{comment.content}</span>
+                          <div key={`${comment.post_id}-${comment.user_id}-${comment.comment_time}`} style={{ fontSize: 14, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <div style={{ 
+                              width: 24, 
+                              height: 24, 
+                              borderRadius: '50%', 
+                              background: comment.profile_picture_url 
+                                ? 'none' 
+                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                              display: 'grid', 
+                              placeItems: 'center', 
+                              color: '#fff', 
+                              fontSize: 10,
+                              fontWeight: 600,
+                              overflow: 'hidden',
+                              flexShrink: 0
+                            }}>
+                              {comment.profile_picture_url ? (
+                                <img 
+                                  src={comment.profile_picture_url} 
+                                  alt={comment.user_id}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                comment.user_id.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>{comment.user_id}</span>{' '}
+                              <span style={{ color: '#374151' }}>{comment.content}</span>
+                            </div>
                           </div>
                         ))}
                       </div>

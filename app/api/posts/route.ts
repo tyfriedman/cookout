@@ -27,7 +27,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    return NextResponse.json({ posts: data || [] });
+    // Fetch profile pictures for all unique usernames
+    const usernames = [...new Set((data || []).map((post: any) => post.usernamefk))];
+    const { data: usersData } = await supabase
+      .from('users')
+      .select('username, profile_picture_url')
+      .in('username', usernames);
+
+    const profilePicturesMap = new Map(
+      (usersData || []).map((user: any) => [user.username, user.profile_picture_url])
+    );
+
+    // Add profile picture URLs to posts
+    const postsWithProfilePics = (data || []).map((post: any) => ({
+      ...post,
+      profile_picture_url: profilePicturesMap.get(post.usernamefk) || null,
+    }));
+
+    return NextResponse.json({ posts: postsWithProfilePics });
   } catch (e) {
     console.error('GET error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
