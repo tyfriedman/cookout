@@ -69,7 +69,15 @@ export async function GET(
     }
 
     // Build ingredients list
-    const recipe = invitation.recipe;
+    // Handle recipe as either array or object (Supabase can return nested relations as arrays)
+    const recipe = Array.isArray(invitation.recipe) 
+    ? invitation.recipe[0] 
+    : invitation.recipe;
+    
+    if (!recipe) {
+    return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
+    }
+    
     const allIngredients = [
       recipe.i1, recipe.i2, recipe.i3, recipe.i4, recipe.i5,
       recipe.i6, recipe.i7, recipe.i8, recipe.i9, recipe.i0
