@@ -226,7 +226,7 @@ export default function PostsPage() {
                     }}>
                       {hasValidProfilePicture(post.profile_picture_url) ? (
                         <img 
-                          src={post.profile_picture_url} 
+                          src={post.profile_picture_url || undefined} 
                           alt={post.usernamefk}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                           onError={(e) => {
@@ -324,7 +324,7 @@ export default function PostsPage() {
                             }}>
                               {hasValidProfilePicture(comment.profile_picture_url) ? (
                                 <img 
-                                  src={comment.profile_picture_url} 
+                                  src={comment.profile_picture_url || undefined} 
                                   alt={comment.user_id}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                   onError={(e) => {
