@@ -22,6 +22,14 @@ type Comment = {
   profile_picture_url?: string | null;
 };
 
+function hasValidProfilePicture(url: string | null | undefined): boolean {
+  // #region agent log
+  const result = !!(url && typeof url === 'string' && url.trim() !== '');
+  fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:26',message:'hasValidProfilePicture check',data:{url,urlType:typeof url,isString:typeof url==='string',trimmed:typeof url==='string'?url.trim():null,result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
+  return result;
+}
+
 export default function PostsPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -53,9 +61,18 @@ export default function PostsPage() {
     setLoading(true);
     setError(null);
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:60',message:'Fetching posts from API',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       const res = await fetch('/api/posts');
       const data = await res.json();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:62',message:'API response received',data:{postsCount:data.posts?.length||0,firstPostProfilePic:data.posts?.[0]?.profile_picture_url,allProfilePics:data.posts?.map((p:any)=>p.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       if (!res.ok) throw new Error(data.error || 'Failed to load');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:63',message:'Setting posts state',data:{postsCount:data.posts?.length||0,profilePicValues:data.posts?.map((p:any)=>({username:p.usernamefk,profilePic:p.profile_picture_url,hasValid:hasValidProfilePicture(p.profile_picture_url)}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setPosts(data.posts as Post[]);
     } catch (e: any) {
       setError(e.message || 'Unexpected error');
@@ -196,7 +213,11 @@ export default function PostsPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
-            {posts.map((post) => (
+            {posts.map((post) => {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:203',message:'Rendering post',data:{postId:post.post_id,username:post.usernamefk,profilePicUrl:post.profile_picture_url,hasValid:hasValidProfilePicture(post.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
+              return (
               <article key={post.post_id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
                 {/* Post Header */}
                 <header style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
@@ -205,21 +226,41 @@ export default function PostsPage() {
                       width: 40, 
                       height: 40, 
                       borderRadius: '50%', 
-                      background: post.profile_picture_url 
+                      background: hasValidProfilePicture(post.profile_picture_url)
                         ? 'none' 
                         : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                      display: 'grid', 
-                      placeItems: 'center', 
+                      display: hasValidProfilePicture(post.profile_picture_url) ? 'block' : 'grid', 
+                      placeItems: hasValidProfilePicture(post.profile_picture_url) ? undefined : 'center', 
                       color: '#fff', 
                       fontWeight: 600,
                       overflow: 'hidden',
                       flexShrink: 0
                     }}>
-                      {post.profile_picture_url ? (
+                      {hasValidProfilePicture(post.profile_picture_url) ? (
                         <img 
                           src={post.profile_picture_url} 
                           alt={post.usernamefk}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          onLoad={() => {
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:223',message:'Profile image loaded successfully',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                            // #endregion
+                          }}
+                          onError={(e) => {
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:227',message:'Profile image failed to load',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+                            // #endregion
+                            // Fallback to initials if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.style.display = 'grid';
+                              parent.style.placeItems = 'center';
+                              parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                              parent.innerHTML = post.usernamefk.charAt(0).toUpperCase();
+                            }
+                          }}
                         />
                       ) : (
                         post.usernamefk.charAt(0).toUpperCase()
@@ -290,22 +331,34 @@ export default function PostsPage() {
                               width: 24, 
                               height: 24, 
                               borderRadius: '50%', 
-                              background: comment.profile_picture_url 
+                              background: hasValidProfilePicture(comment.profile_picture_url)
                                 ? 'none' 
                                 : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                              display: 'grid', 
-                              placeItems: 'center', 
+                              display: hasValidProfilePicture(comment.profile_picture_url) ? 'block' : 'grid', 
+                              placeItems: hasValidProfilePicture(comment.profile_picture_url) ? undefined : 'center', 
                               color: '#fff', 
                               fontSize: 10,
                               fontWeight: 600,
                               overflow: 'hidden',
                               flexShrink: 0
                             }}>
-                              {comment.profile_picture_url ? (
+                              {hasValidProfilePicture(comment.profile_picture_url) ? (
                                 <img 
                                   src={comment.profile_picture_url} 
                                   alt={comment.user_id}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                  onError={(e) => {
+                                    // Fallback to initials if image fails to load
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      parent.style.display = 'grid';
+                                      parent.style.placeItems = 'center';
+                                      parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                                      parent.innerHTML = comment.user_id.charAt(0).toUpperCase();
+                                    }
+                                  }}
                                 />
                               ) : (
                                 comment.user_id.charAt(0).toUpperCase()
@@ -347,7 +400,8 @@ export default function PostsPage() {
                   )}
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         )}
     </div>

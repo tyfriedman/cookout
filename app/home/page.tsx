@@ -11,6 +11,7 @@ type Post = {
   image_url: string;
   like_count: number;
   post_time: string;
+  profile_picture_url?: string | null;
 };
 
 type Comment = {
@@ -19,6 +20,14 @@ type Comment = {
   comment_time: string;
   content: string;
 };
+
+function hasValidProfilePicture(url: string | null | undefined): boolean {
+  // #region agent log
+  const result = !!(url && typeof url === 'string' && url.trim() !== '');
+  fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:27',message:'hasValidProfilePicture check',data:{url,urlType:typeof url,isString:typeof url==='string',trimmed:typeof url==='string'?url.trim():null,result},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
+  return result;
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -56,7 +65,13 @@ export default function HomePage() {
     try {
       const res = await fetch('/api/posts');
       const data = await res.json();
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:59',message:'API response received',data:{postsCount:data.posts?.length||0,firstPostProfilePic:data.posts?.[0]?.profile_picture_url,allProfilePics:data.posts?.map((p:any)=>p.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       if (!res.ok) throw new Error(data.error || 'Failed to load');
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:61',message:'Setting posts state',data:{postsCount:data.posts?.length||0,profilePicValues:data.posts?.map((p:any)=>({username:p.usernamefk,profilePic:p.profile_picture_url,hasValid:hasValidProfilePicture(p.profile_picture_url)}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       setPosts(data.posts as Post[]);
     } catch (e: any) {
       setError(e.message || 'Unexpected error');
@@ -188,13 +203,57 @@ export default function HomePage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
-          {posts.map((post) => (
+          {posts.map((post) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:192',message:'Rendering post',data:{postId:post.post_id,username:post.usernamefk,profilePicUrl:post.profile_picture_url,hasValid:hasValidProfilePicture(post.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+            return (
             <article key={post.post_id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
               {/* Post Header */}
               <header style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 600 }}>
-                    {post.usernamefk.charAt(0).toUpperCase()}
+                  <div style={{ 
+                    width: 40, 
+                    height: 40, 
+                    borderRadius: '50%', 
+                    background: hasValidProfilePicture(post.profile_picture_url)
+                      ? 'none' 
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                    display: hasValidProfilePicture(post.profile_picture_url) ? 'block' : 'grid', 
+                    placeItems: hasValidProfilePicture(post.profile_picture_url) ? undefined : 'center', 
+                    color: '#fff', 
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    flexShrink: 0
+                  }}>
+                    {hasValidProfilePicture(post.profile_picture_url) ? (
+                      <img 
+                        src={post.profile_picture_url || undefined} 
+                        alt={post.usernamefk}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        onLoad={() => {
+                          // #region agent log
+                          fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:219',message:'Profile image loaded successfully',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'E'})}).catch(()=>{});
+                          // #endregion
+                        }}
+                        onError={(e) => {
+                          // #region agent log
+                          fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/home/page.tsx:223',message:'Profile image failed to load',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run-fix',hypothesisId:'D'})}).catch(()=>{});
+                          // #endregion
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.style.display = 'grid';
+                            parent.style.placeItems = 'center';
+                            parent.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                            parent.innerHTML = post.usernamefk.charAt(0).toUpperCase();
+                          }
+                        }}
+                      />
+                    ) : (
+                      post.usernamefk.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div>
                     <p style={{ margin: 0, fontWeight: 600 }}>{post.usernamefk}</p>
@@ -291,7 +350,8 @@ export default function HomePage() {
                 )}
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

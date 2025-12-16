@@ -1,5 +1,25 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import fs from 'fs';
+
+// #region agent log helper
+function logDebug(payload: Record<string, any>) {
+  try {
+    fs.appendFileSync(
+      '/Users/tyfriedman/nd/databases/cookout/.cursor/debug.log',
+      JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'run1',
+        timestamp: Date.now(),
+        ...payload,
+      }) + '\n',
+      { encoding: 'utf8' }
+    );
+  } catch {
+    // swallow logging errors in debug mode
+  }
+}
+// #endregion
 
 // GET - fetch posts (all posts OR filtered by username)
 export async function GET(request: Request) {
@@ -22,6 +42,15 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
 
+    // #region agent log
+    logDebug({
+      location: 'app/api/posts/route.ts:26',
+      message: 'Fetched posts from Supabase',
+      data: { count: data?.length ?? 0, first: data?.[0] ?? null, username },
+      hypothesisId: 'A',
+    });
+    // #endregion
+
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
@@ -34,6 +63,15 @@ export async function GET(request: Request) {
       .select('username, profile_picture_url')
       .in('username', usernames);
 
+    // #region agent log
+    logDebug({
+      location: 'app/api/posts/route.ts:37',
+      message: 'Fetched profile pictures for usernames',
+      data: { usernames, usersCount: usersData?.length ?? 0 },
+      hypothesisId: 'A',
+    });
+    // #endregion
+
     const profilePicturesMap = new Map(
       (usersData || []).map((user: any) => [user.username, user.profile_picture_url])
     );
@@ -43,6 +81,22 @@ export async function GET(request: Request) {
       ...post,
       profile_picture_url: profilePicturesMap.get(post.usernamefk) || null,
     }));
+
+    // #region agent log
+    logDebug({
+      location: 'app/api/posts/route.ts:46',
+      message: 'Posts enriched with profile pictures',
+      data: {
+        count: postsWithProfilePics.length,
+        first: postsWithProfilePics[0] ?? null,
+        profilePicValues: postsWithProfilePics.map((p: any) => ({
+          username: p.usernamefk,
+          profile_picture_url: p.profile_picture_url,
+        })),
+      },
+      hypothesisId: 'A',
+    });
+    // #endregion
 
     return NextResponse.json({ posts: postsWithProfilePics });
   } catch (e) {
@@ -83,7 +137,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    return NextResponse.json({ post: data }, { status: 201 });
+    // Fetch profile picture for the user
+    const { data: userData } = await supabase
+      .from('users')
+      .select('profile_picture_url')
+      .eq('username', username)
+      .maybeSingle();
+
+    // Add profile picture URL to the post
+    const postWithProfilePic = {
+      ...data,
+      profile_picture_url: userData?.profile_picture_url || null,
+    };
+
+    return NextResponse.json({ post: postWithProfilePic }, { status: 201 });
   } catch (e) {
     console.error('POST error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
