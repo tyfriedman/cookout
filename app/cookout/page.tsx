@@ -171,7 +171,11 @@ export default function CookoutPage() {
       const data = await response.json();
       if (response.ok && data.recipe) {
         setSelectedRecipe(data.recipe);
-        setRecipeIngredients(data.recipe.ingredients || []);
+        const cleanedIngredients = (Array.isArray(data.recipe.ingredients) ? data.recipe.ingredients : [])
+          .map((ing: unknown) => (typeof ing === 'string' ? ing.trim() : ''))
+          .filter((ing: string) => ing.length > 0);
+        setRecipeIngredients(cleanedIngredients);
+        setSelectedIngredients(new Set());
       }
     } catch (err) {
       // Error fetching recipe details
