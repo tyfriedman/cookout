@@ -11,7 +11,8 @@ type Recipe = {recipe_id: number,
             fat: number,
             sugar: number,
             carb: number,
-            protein: number
+            protein: number,
+            match_percentage?: number
             }
 
 export default function RecipesPage() {
@@ -21,6 +22,7 @@ export default function RecipesPage() {
   const [options, setOptions] = useState<FoodOption[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [userPreferences, setUserPreferences] = useState({
     mealType: 'All',
     prepTime: 'All',
@@ -49,25 +51,42 @@ export default function RecipesPage() {
 
   useEffect(() => {
     if (username !== null) fetchRecipes();
-  }, [username, searchQuery, userPreferences]);
+  }, [username, searchQuery, userPreferences, showRecommendations]);
   
   async function fetchRecipes() {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/recipes/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keywords: searchQuery,
-          filters: userPreferences,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to fetch recipes');
-      
-      setRecipes(data.recipes);
+      if (showRecommendations) {
+        // Use recommendations API
+        const response = await fetch('/api/recipes/recommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username,
+            filters: userPreferences,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch recommendations');
+        
+        setRecipes(data.recipes);
+      } else {
+        // Use regular search API
+        const response = await fetch('/api/recipes/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keywords: searchQuery,
+            filters: userPreferences,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to fetch recipes');
+        
+        setRecipes(data.recipes);
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -99,10 +118,31 @@ export default function RecipesPage() {
   }}
   >
     <header style={{ marginBottom: 24 }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>Recipe Search</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <h1 style={{ fontSize: 28, margin: 0 }}>Recipe Search</h1>
+        <button
+          type="button"
+          onClick={() => setShowRecommendations(!showRecommendations)}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            border: '1px solid #d1d5db',
+            background: showRecommendations ? '#2563eb' : '#fff',
+            color: showRecommendations ? '#fff' : '#111827',
+            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
+        >
+          {showRecommendations ? 'Show All Recipes' : 'Show Recommendations'}
+        </button>
+      </div>
       <p style={{ color: '#6b7280', marginTop: 8 }}>
-        Find hundreds of recipes with what you have in your 
-        <a href='/pantry' style={{color: '#3895d3'}}> pantry</a>
+        {showRecommendations 
+          ? 'Recommendations based on your pantry and your friends\' pantries'
+          : `Find hundreds of recipes with what you have in your `}
+        {!showRecommendations && <a href='/pantry' style={{color: '#3895d3'}}> pantry</a>}
       </p>
     </header>
 
@@ -117,9 +157,10 @@ export default function RecipesPage() {
         {/* Search Input */}
         <input
           type="text"
-          placeholder="Search recipes..."
+          placeholder={showRecommendations ? "Recommendations based on your pantry..." : "Search recipes..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          disabled={showRecommendations}
           style={{
             flex: 1,
             padding: '10px 16px',
@@ -128,9 +169,11 @@ export default function RecipesPage() {
             fontSize: 16,
             outline: 'none',
             transition: 'border-color 0.2s ease',
+            background: showRecommendations ? '#f3f4f6' : '#fff',
+            cursor: showRecommendations ? 'not-allowed' : 'text',
           }}
-          onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
-          onBlur={(e) => (e.target.style.borderColor = '#d1d5db')}
+          onFocus={(e) => { if (!showRecommendations) e.target.style.borderColor = '#2563eb' }}
+          onBlur={(e) => { if (!showRecommendations) e.target.style.borderColor = '#d1d5db' }}
         />
 
         {/* Search Button */}
@@ -201,7 +244,21 @@ export default function RecipesPage() {
                         boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                         cursor: 'pointer',
                       }}>
-                        <h3 style={{ margin: 0, fontSize: 18 }}>{recipe.name}</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                          <h3 style={{ margin: 0, fontSize: 18 }}>{recipe.name}</h3>
+                          {showRecommendations && recipe.match_percentage !== undefined && (
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: 6, 
+                              background: '#dbeafe', 
+                              color: '#1e40af',
+                              fontSize: 12,
+                              fontWeight: 600
+                            }}>
+                              {recipe.match_percentage}% match
+                            </span>
+                          )}
+                        </div>
                         <p style={{ color: '#6b7280', marginTop: 4 }}>
                           {recipe.calories} calories • {recipe.protein} g protein • {recipe.carb} g carbs • {recipe.sugar} g sugar • {recipe.fat} g fat
                         </p>

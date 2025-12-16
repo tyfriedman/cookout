@@ -27,6 +27,13 @@ type Recipe = {
   name: string;
 };
 
+type Friend = {
+  username: string;
+  firstname: string | null;
+  lastname: string | null;
+  profile_picture_url: string | null;
+};
+
 function formatJoinDate(dateIso: string | null): string {
   if (!dateIso) return '—';
   const then = new Date(dateIso);
@@ -84,6 +91,8 @@ export default function ProfilePage() {
   const [selectedProfilePic, setSelectedProfilePic] = useState<File | null>(null);
   const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem('cookout_username') : null;
@@ -123,6 +132,9 @@ export default function ProfilePage() {
           console.error('Posts API not available:', postsError);
           setPosts([]);
         }
+
+        // Load friends
+        loadFriends();
       } catch (e: any) {
         setError(e.message || 'Unexpected error');
       } finally {
@@ -174,14 +186,14 @@ export default function ProfilePage() {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please select an image file (JPEG, PNG, GIF, or WebP).');
+      console.error('Invalid file type. Please select an image file (JPEG, PNG, GIF, or WebP).');
       return;
     }
   
     // Validate file size (max 5MB)
     const maxSize = 50 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      alert('File too large. Maximum size is 5MB.');
+      console.error('File too large. Maximum size is 5MB.');
       return;
     }
   
@@ -232,7 +244,7 @@ export default function ProfilePage() {
       } catch (e: any) {
         setUploadingImage(false);
         setSubmitting(false);
-        alert(e.message || 'Failed to upload image');
+        console.error('Failed to upload image:', e.message || 'Failed to upload image');
         return;
       }
       setUploadingImage(false);
@@ -263,14 +275,14 @@ export default function ProfilePage() {
       const fileInput = document.getElementById('image-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (e: any) {
-      alert(e.message || 'Failed to create post');
+      console.error('Failed to create post:', e.message || 'Failed to create post');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDeletePost = async (postId: number) => {
-    if (!username || !confirm('Delete this post?')) return;
+    if (!username) return;
     
     try {
       const res = await fetch('/api/posts/delete', {
@@ -284,7 +296,7 @@ export default function ProfilePage() {
       
       setPosts(posts.filter(p => p.post_id !== postId));
     } catch (e: any) {
-      alert(e.message || 'Failed to delete post');
+      console.error('Failed to delete post:', e.message || 'Failed to delete post');
     }
   };
 
@@ -303,6 +315,22 @@ export default function ProfilePage() {
     if (!recipeId) return null;
     const recipe = recipes.find(r => r.recipe_id === recipeId);
     return recipe?.name || `Recipe #${recipeId}`;
+  };
+
+  const loadFriends = async () => {
+    if (!username) return;
+    setLoadingFriends(true);
+    try {
+      const res = await fetch(`/api/friends/list?username=${encodeURIComponent(username)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setFriends(data.friends || []);
+      }
+    } catch (e) {
+      console.error('Failed to load friends:', e);
+    } finally {
+      setLoadingFriends(false);
+    }
   };
 
   return (
@@ -369,12 +397,12 @@ export default function ProfilePage() {
                       if (file) {
                         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
                         if (!allowedTypes.includes(file.type)) {
-                          alert('Invalid file type. Please select an image file.');
+                          console.error('Invalid file type. Please select an image file.');
                           return;
                         }
                         const maxSize = 5 * 1024 * 1024; // 5MB
                         if (file.size > maxSize) {
-                          alert('File too large. Maximum size is 5MB.');
+                          console.error('File too large. Maximum size is 5MB.');
                           return;
                         }
                         setSelectedProfilePic(file);
@@ -422,7 +450,7 @@ export default function ProfilePage() {
                             setUser({ ...user, profile_picture_url: uploadData.url });
                           }
                         } catch (err: any) {
-                          alert(err.message || 'Failed to upload profile picture');
+                          console.error('Failed to upload profile picture:', err.message || 'Failed to upload profile picture');
                           // Revert preview on error
                           setProfilePicPreview(user.profile_picture_url || null);
                         } finally {
@@ -460,6 +488,178 @@ export default function ProfilePage() {
 
         {username && user && (
           <>
+            {/* Following/Followers Section */}
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, padding: 24, background: '#ffffff', marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h2 style={{ fontSize: 20, margin: 0 }}>Following & Followers</h2>
+                <a
+                  href="/friends"
+                  style={{
+                    padding: '8px 16px',
+                    background: '#2563eb',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 500,
+                  }}
+                >
+                  Manage Friends
+                </a>
+              </div>
+              {loadingFriends ? (
+                <p style={{ color: '#6b7280' }}>Loading...</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  {/* Following */}
+                  <div>
+                    <h3 style={{ fontSize: 16, marginBottom: 12, color: '#374151' }}>Following ({friends.length})</h3>
+                    {friends.length === 0 ? (
+                      <p style={{ color: '#6b7280', fontSize: 14 }}>Not following anyone yet</p>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+                        {friends.slice(0, 10).map((friend) => (
+                          <a
+                            key={friend.username}
+                            href={`/profile?username=${friend.username}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '8px 12px',
+                              background: '#f9fafb',
+                              borderRadius: 8,
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              transition: 'background 0.2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = '#f9fafb')}
+                          >
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                background: friend.profile_picture_url
+                                  ? 'none'
+                                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                display: 'grid',
+                                placeItems: 'center',
+                                color: '#fff',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {friend.profile_picture_url ? (
+                                <img
+                                  src={friend.profile_picture_url}
+                                  alt={friend.username}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                friend.username.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 500, color: '#111827', fontSize: 14 }}>
+                                {friend.username}
+                              </div>
+                              {(friend.firstname || friend.lastname) && (
+                                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                  {[friend.firstname, friend.lastname].filter(Boolean).join(' ')}
+                                </div>
+                              )}
+                            </div>
+                          </a>
+                        ))}
+                        {friends.length > 10 && (
+                          <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', marginTop: 8 }}>
+                            and {friends.length - 10} more...
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Followers */}
+                  <div>
+                    <h3 style={{ fontSize: 16, marginBottom: 12, color: '#374151' }}>Followers ({friends.length})</h3>
+                    {friends.length === 0 ? (
+                      <p style={{ color: '#6b7280', fontSize: 14 }}>No followers yet</p>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+                        {friends.slice(0, 10).map((friend) => (
+                          <a
+                            key={friend.username}
+                            href={`/profile?username=${friend.username}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '8px 12px',
+                              background: '#f9fafb',
+                              borderRadius: 8,
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              transition: 'background 0.2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = '#f3f4f6')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = '#f9fafb')}
+                          >
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                background: friend.profile_picture_url
+                                  ? 'none'
+                                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                display: 'grid',
+                                placeItems: 'center',
+                                color: '#fff',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {friend.profile_picture_url ? (
+                                <img
+                                  src={friend.profile_picture_url}
+                                  alt={friend.username}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                friend.username.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 500, color: '#111827', fontSize: 14 }}>
+                                {friend.username}
+                              </div>
+                              {(friend.firstname || friend.lastname) && (
+                                <div style={{ fontSize: 12, color: '#6b7280' }}>
+                                  {[friend.firstname, friend.lastname].filter(Boolean).join(' ')}
+                                </div>
+                              )}
+                            </div>
+                          </a>
+                        ))}
+                        {friends.length > 10 && (
+                          <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', marginTop: 8 }}>
+                            and {friends.length - 10} more...
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontSize: 24, margin: 0 }}>My Posts</h2>
               <button

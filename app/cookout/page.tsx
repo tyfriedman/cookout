@@ -208,11 +208,10 @@ export default function CookoutPage() {
         // Refresh invitations list
         fetchInvitations();
       } else {
-        alert(data.error || 'Failed to accept invitation');
+        console.error('Failed to accept invitation:', data.error || 'Failed to accept invitation');
       }
     } catch (err) {
       console.error('Error accepting invitation:', err);
-      alert('Failed to accept invitation');
     }
   }
 
@@ -237,13 +236,13 @@ export default function CookoutPage() {
 
   async function createInvitation() {
     if (!username || !selectedRecipe || !cookoutDate || !cookoutTime) {
-      alert('Please fill in all required fields');
+      console.error('Please fill in all required fields');
       return;
     }
 
     const dateTime = new Date(`${cookoutDate}T${cookoutTime}`);
     if (isNaN(dateTime.getTime())) {
-      alert('Invalid date or time');
+      console.error('Invalid date or time');
       return;
     }
 
@@ -263,16 +262,14 @@ export default function CookoutPage() {
 
       const data = await response.json();
       if (response.ok) {
-        alert('Invitation created successfully!');
         resetCreateForm();
         setView('main');
         fetchInvitations();
       } else {
-        alert(data.error || 'Failed to create invitation');
+        console.error('Failed to create invitation:', data.error || 'Failed to create invitation');
       }
     } catch (err) {
       console.error('Error creating invitation:', err);
-      alert('Failed to create invitation');
     } finally {
       setCreating(false);
     }
@@ -295,15 +292,13 @@ export default function CookoutPage() {
 
       const data = await response.json();
       if (response.ok) {
-        alert('Ingredients confirmed!');
         setView('main');
         fetchInvitations();
       } else {
-        alert(data.error || 'Failed to confirm ingredients');
+        console.error('Failed to confirm ingredients:', data.error || 'Failed to confirm ingredients');
       }
     } catch (err) {
       console.error('Error confirming ingredients:', err);
-      alert('Failed to confirm ingredients');
     } finally {
       setConfirming(false);
     }
