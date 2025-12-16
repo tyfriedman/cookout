@@ -12,13 +12,11 @@ export async function GET() {
       .order('name', { ascending: true });
 
     if (error) {
-      console.error('Supabase error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     return NextResponse.json({ recipes: data || [] });
   } catch (e) {
-    console.error('GET error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

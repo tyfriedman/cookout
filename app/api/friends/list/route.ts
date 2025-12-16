@@ -19,7 +19,6 @@ export async function GET(request: Request) {
       .eq('usernamefk_1', username);
 
     if (error1) {
-      console.error('Error fetching friends (direction 1):', error1);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -30,7 +29,6 @@ export async function GET(request: Request) {
       .eq('usernamefk_2', username);
 
     if (error2) {
-      console.error('Error fetching friends (direction 2):', error2);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -50,7 +48,6 @@ export async function GET(request: Request) {
       .in('username', Array.from(friendUsernames));
 
     if (usersError) {
-      console.error('Error fetching friend users:', usersError);
       return NextResponse.json({ error: 'Database error fetching users' }, { status: 500 });
     }
 
@@ -74,7 +71,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ friends: uniqueFriends });
   } catch (e) {
-    console.error('Error fetching friends list:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

@@ -12,6 +12,7 @@ type Post = {
   like_count: number;
   post_time: string;
   profile_picture_url?: string | null;
+  user_has_liked?: boolean;
 };
 
 type Comment = {
@@ -23,11 +24,7 @@ type Comment = {
 };
 
 function hasValidProfilePicture(url: string | null | undefined): boolean {
-  // #region agent log
-  const result = !!(url && typeof url === 'string' && url.trim() !== '');
-  fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:26',message:'hasValidProfilePicture check',data:{url,urlType:typeof url,isString:typeof url==='string',trimmed:typeof url==='string'?url.trim():null,result},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
-  return result;
+  return !!(url && typeof url === 'string' && url.trim() !== '');
 }
 
 export default function PostsPage() {
@@ -39,7 +36,6 @@ export default function PostsPage() {
   const [showComments, setShowComments] = useState<{[key: string]: boolean}>({});
   const [newComment, setNewComment] = useState<{[key: string]: string}>({});
   const [commentCounts, setCommentCounts] = useState<{[key: string]: number}>({});
-  const [likeCounts, setLikeCounts] = useState<{[key: string]: number}>({});
 
   useEffect(() => {
     const u = window.localStorage.getItem('cookout_username');
@@ -48,7 +44,7 @@ export default function PostsPage() {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [username]);
 
   useEffect(() => {
     // Fetch comment counts for all posts
@@ -61,18 +57,10 @@ export default function PostsPage() {
     setLoading(true);
     setError(null);
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:60',message:'Fetching posts from API',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      const res = await fetch('/api/posts');
+      const url = username ? `/api/posts?currentUser=${encodeURIComponent(username)}` : '/api/posts';
+      const res = await fetch(url);
       const data = await res.json();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:62',message:'API response received',data:{postsCount:data.posts?.length||0,firstPostProfilePic:data.posts?.[0]?.profile_picture_url,allProfilePics:data.posts?.map((p:any)=>p.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       if (!res.ok) throw new Error(data.error || 'Failed to load');
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:63',message:'Setting posts state',data:{postsCount:data.posts?.length||0,profilePicValues:data.posts?.map((p:any)=>({username:p.usernamefk,profilePic:p.profile_picture_url,hasValid:hasValidProfilePicture(p.profile_picture_url)}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       setPosts(data.posts as Post[]);
     } catch (e: any) {
       setError(e.message || 'Unexpected error');
@@ -92,18 +80,22 @@ export default function PostsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          post_id: postId,     
-          user_id: username,   // 
+          post_id: postId,
+          user_id: username,
         }),
       });
   
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to like');
   
-      // Optionally, update the like count locally
+      // Update the like count and like status locally
       setPosts(posts.map(post =>
         post.post_id === postId
-          ? { ...post, like_count: post.like_count + (data.liked ? 1 : -1) }
+          ? { 
+              ...post, 
+              like_count: post.like_count + (data.liked ? 1 : -1),
+              user_has_liked: data.liked
+            }
           : post
       ));
     } catch (e: any) {
@@ -213,11 +205,7 @@ export default function PostsPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 16 }}>
-            {posts.map((post) => {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:203',message:'Rendering post',data:{postId:post.post_id,username:post.usernamefk,profilePicUrl:post.profile_picture_url,hasValid:hasValidProfilePicture(post.profile_picture_url)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
-              return (
+            {posts.map((post) => (
               <article key={post.post_id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
                 {/* Post Header */}
                 <header style={{ padding: 16, borderBottom: '1px solid #f3f4f6' }}>
@@ -241,15 +229,7 @@ export default function PostsPage() {
                           src={post.profile_picture_url} 
                           alt={post.usernamefk}
                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                          onLoad={() => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:223',message:'Profile image loaded successfully',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-                            // #endregion
-                          }}
                           onError={(e) => {
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/b12453d1-5338-4ad1-9dbf-d8a9e64b4ab2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/posts/page.tsx:227',message:'Profile image failed to load',data:{username:post.usernamefk,url:post.profile_picture_url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                            // #endregion
                             // Fallback to initials if image fails to load
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
@@ -292,9 +272,9 @@ export default function PostsPage() {
                     <button
                       type="button"
                       onClick={() => handleLike(post.post_id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: 0 }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', color: post.user_has_liked ? '#ef4444' : '#374151', padding: 0 }}
                     >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill={post.user_has_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                       </svg>
                       <span style={{ fontWeight: 500 }}>{post.like_count || 0}</span>
@@ -400,8 +380,7 @@ export default function PostsPage() {
                   )}
                 </div>
               </article>
-              );
-            })}
+            ))}
           </div>
         )}
     </div>

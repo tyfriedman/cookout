@@ -115,46 +115,12 @@ export async function POST(request: Request) {
             });
         }
 
-        // if (keywords && keywords.trim() !== '') {
-        //     query = query.ilike('name', `%${keywords}%`);
-        // }
-
-        // const mealTypeColumnMap: Record<string, string> = {
-        //     "Main Dish": "main_dish",
-        //     "Side Dish": "side_dish",
-        //     "Breakfast": "breakfast",
-        //     "Lunch": "lunch",
-        //     "Dinner": "dinner",
-        //     "Dessert": "dessert"
-        //     };
-
-        // if (filters?.mealType && filters.mealType !== 'All') {
-        //     const columnName = mealTypeColumnMap[filters.mealType];
-        //     if (columnName) {
-        //         query = query.eq(`recipe_tags.${columnName}`, true);
-        //     }
-        // }
-
-        // (legacy conditional filters retained above in a more concise form)
-
-
         const { data, error } = await query;
 
         if (error) throw error;
 
-        // const recipes = data?.map(r => ({
-        //     recipe_id: r.recipe_id,
-        //     name: r.name,
-        //     calories: r.calories,
-        //     protein: r.protein,
-        //     carb: r.carb,
-        //     fat: r.fat,
-        //     sugar: r.sugar
-        // })) || [];
-
         return NextResponse.json({ recipes: data || [] });
     } catch (err: any) {
-        console.error('Error fetching recipes: ', err);
         return NextResponse.json({ recipes: [], error: err.message }, { status: 500 });
     }
 }

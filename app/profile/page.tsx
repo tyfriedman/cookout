@@ -129,7 +129,6 @@ export default function ProfilePage() {
             setPosts(postsData.posts || []);
           }
         } catch (postsError) {
-          console.error('Posts API not available:', postsError);
           setPosts([]);
         }
 
@@ -173,7 +172,7 @@ export default function ProfilePage() {
         setRecipes(data.recipes || []);
       }
     } catch (e) {
-      console.error('Failed to load recipes:', e);
+      // Failed to load recipes
     }
   };
 
@@ -186,14 +185,12 @@ export default function ProfilePage() {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      console.error('Invalid file type. Please select an image file (JPEG, PNG, GIF, or WebP).');
       return;
     }
   
-    // Validate file size (max 5MB)
-    const maxSize = 50 * 1024 * 1024; // 5MB
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
-      console.error('File too large. Maximum size is 5MB.');
       return;
     }
   
@@ -244,7 +241,6 @@ export default function ProfilePage() {
       } catch (e: any) {
         setUploadingImage(false);
         setSubmitting(false);
-        console.error('Failed to upload image:', e.message || 'Failed to upload image');
         return;
       }
       setUploadingImage(false);
@@ -275,7 +271,7 @@ export default function ProfilePage() {
       const fileInput = document.getElementById('image-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
     } catch (e: any) {
-      console.error('Failed to create post:', e.message || 'Failed to create post');
+      // Failed to create post
     } finally {
       setSubmitting(false);
     }
@@ -296,7 +292,7 @@ export default function ProfilePage() {
       
       setPosts(posts.filter(p => p.post_id !== postId));
     } catch (e: any) {
-      console.error('Failed to delete post:', e.message || 'Failed to delete post');
+      // Failed to delete post
     }
   };
 
@@ -327,7 +323,7 @@ export default function ProfilePage() {
         setFriends(data.friends || []);
       }
     } catch (e) {
-      console.error('Failed to load friends:', e);
+      // Failed to load friends
     } finally {
       setLoadingFriends(false);
     }
@@ -397,12 +393,10 @@ export default function ProfilePage() {
                       if (file) {
                         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
                         if (!allowedTypes.includes(file.type)) {
-                          console.error('Invalid file type. Please select an image file.');
                           return;
                         }
                         const maxSize = 5 * 1024 * 1024; // 5MB
                         if (file.size > maxSize) {
-                          console.error('File too large. Maximum size is 5MB.');
                           return;
                         }
                         setSelectedProfilePic(file);
@@ -450,7 +444,6 @@ export default function ProfilePage() {
                             setUser({ ...user, profile_picture_url: uploadData.url });
                           }
                         } catch (err: any) {
-                          console.error('Failed to upload profile picture:', err.message || 'Failed to upload profile picture');
                           // Revert preview on error
                           setProfilePicPreview(user.profile_picture_url || null);
                         } finally {

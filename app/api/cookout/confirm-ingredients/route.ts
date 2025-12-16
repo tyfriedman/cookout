@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       .eq('username', username);
 
     if (deleteError) {
-      console.error('Error deleting existing ingredients:', deleteError);
+      // Error deleting existing ingredients, continue anyway
     }
 
     // Insert new ingredient confirmations
@@ -107,13 +107,12 @@ export async function POST(request: Request) {
         .eq('username', username);
 
       if (updateError) {
-        console.error('Error updating participant status:', updateError);
+        // Error updating participant status, continue anyway
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error('Error confirming ingredients:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

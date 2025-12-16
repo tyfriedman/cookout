@@ -288,7 +288,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ recipes: recipesWithMatch });
   } catch (err: any) {
-    console.error('Error fetching recommendations: ', err);
     return NextResponse.json({ recipes: [], error: err.message }, { status: 500 });
   }
 }

@@ -24,13 +24,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Update error:', error);
       return NextResponse.json({ error: 'Failed to update profile picture' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, user: data });
   } catch (e) {
-    console.error('Update profile picture error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

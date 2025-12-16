@@ -62,7 +62,7 @@ export default function FriendsPage() {
         setSentRequests(sentData.requests || []);
       }
     } catch (e: any) {
-      console.error('Error loading requests:', e);
+      // Error loading requests
     } finally {
       setLoadingRequests(false);
     }
@@ -78,7 +78,7 @@ export default function FriendsPage() {
         setFriends(data.friends || []);
       }
     } catch (e: any) {
-      console.error('Error loading friends:', e);
+      // Error loading friends
     } finally {
       setLoadingFriends(false);
     }
@@ -98,7 +98,7 @@ export default function FriendsPage() {
         setSearchResults(data.users || []);
       }
     } catch (e: any) {
-      console.error('Error searching users:', e);
+      // Error searching users
     } finally {
       setSearching(false);
     }
@@ -120,11 +120,9 @@ export default function FriendsPage() {
         await loadRequests();
         setSearchQuery('');
         setSearchResults([]);
-      } else {
-        console.error('Failed to send friend request:', data.error || 'Failed to send friend request');
       }
     } catch (e: any) {
-      console.error('Failed to send friend request:', e.message || 'Failed to send friend request');
+      // Failed to send friend request
     }
   }
 
@@ -144,11 +142,9 @@ export default function FriendsPage() {
       if (res.ok) {
         await loadRequests();
         await loadFriends();
-      } else {
-        console.error(`Failed to ${action} request:`, data.error || `Failed to ${action} request`);
       }
     } catch (e: any) {
-      console.error(`Failed to ${action} request:`, e.message || `Failed to ${action} request`);
+      // Failed to respond to request
     }
   }
 

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
           .insert(creatorIngredientRows);
 
         if (creatorIngError) {
-          console.error('Error storing creator ingredients:', creatorIngError);
+          // Error storing creator ingredients, continue anyway
         }
       }
     }
@@ -138,7 +138,6 @@ export async function POST(request: Request) {
       invitation_id: invitationId 
     });
   } catch (err: any) {
-    console.error('Error creating cookout invitation:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

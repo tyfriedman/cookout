@@ -44,7 +44,7 @@ export async function GET(
       .eq('invitation_id', invitationId);
 
     if (creatorError) {
-      console.error('Error fetching creator ingredients:', creatorError);
+      // Error fetching creator ingredients, continue with empty array
     }
 
     // Get all participants
@@ -54,7 +54,7 @@ export async function GET(
       .eq('invitation_id', invitationId);
 
     if (participantError) {
-      console.error('Error fetching participants:', participantError);
+      // Error fetching participants, continue with empty array
     }
 
     // Get all participant ingredients separately
@@ -65,7 +65,7 @@ export async function GET(
       .eq('confirmed', true);
 
     if (participantIngError) {
-      console.error('Error fetching participant ingredients:', participantIngError);
+      // Error fetching participant ingredients, continue with empty array
     }
 
     // Build ingredients list
@@ -131,7 +131,6 @@ export async function GET(
       },
     });
   } catch (err: any) {
-    console.error('Error fetching invitation details:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

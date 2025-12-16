@@ -88,7 +88,6 @@ export default function RecipesPage() {
         setRecipes(data.recipes);
       }
     } catch (err: any) {
-      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);

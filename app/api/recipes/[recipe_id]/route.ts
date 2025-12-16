@@ -37,7 +37,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rec
       },
     });
   } catch (err: any) {
-    console.error(err);
     return NextResponse.json({ recipe: null, error: err.message }, { status: 500 });
   }
 }

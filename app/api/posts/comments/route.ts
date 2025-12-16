@@ -30,7 +30,6 @@ export async function GET(request: Request) {
       .order('comment_time', { ascending: true });
 
     if (error) {
-      console.error('Error fetching comments:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -53,7 +52,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ comments: commentsWithProfilePics }, { status: 200 });
   } catch (error) {
-    console.error('Unexpected error fetching comments:', error);
     return NextResponse.json(
       { error: 'Failed to fetch comments' },
       { status: 500 }
@@ -83,7 +81,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (postError) {
-      console.error('Error verifying post:', postError);
       return NextResponse.json(
         { error: 'Database error (post verify)' },
         { status: 500 }
@@ -100,8 +97,6 @@ export async function POST(request: Request) {
     // Insert comment with current timestamp
     const commentTime = new Date().toISOString();
 
-    console.log('Inserting comment:', { postId, username, commentTime, content });
-
     const { data: newComment, error: insertError } = await supabase
       .from('comments')
       .insert({
@@ -114,7 +109,6 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      console.error('Error inserting comment:', insertError);
       return NextResponse.json(
         { error: `Database error: ${insertError.message}` },
         { status: 500 }
@@ -126,7 +120,6 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (e) {
-    console.error('Unexpected error in POST:', e);
     return NextResponse.json(
       { error: 'Invalid request' },
       { status: 400 }

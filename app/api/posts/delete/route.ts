@@ -24,7 +24,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
     
@@ -42,13 +41,11 @@ export async function POST(request: Request) {
       .eq('post_id', post_id);
 
     if (error) {
-      console.error('Delete error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (e) {
-    console.error('DELETE error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

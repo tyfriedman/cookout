@@ -50,7 +50,6 @@ export async function POST(request: Request) {
       if (insertError1) {
         // Handle duplicate key error (already friends)
         if ((insertError1 as any).code !== '23505') {
-          console.error('Error creating friendship:', insertError1);
           return NextResponse.json({ error: 'Failed to create friendship' }, { status: 500 });
         }
       }
@@ -66,7 +65,6 @@ export async function POST(request: Request) {
       if (insertError2) {
         // Handle duplicate key error (already friends)
         if ((insertError2 as any).code !== '23505') {
-          console.error('Error creating reverse friendship:', insertError2);
           // Try to clean up the first insert if it succeeded
           await supabase
             .from('friends')
@@ -85,7 +83,6 @@ export async function POST(request: Request) {
         .eq('receiver_username', receiver_username);
 
       if (updateError) {
-        console.error('Error updating request status:', updateError);
         // Don't fail the request if update fails, friendship is already created
       }
 
@@ -105,7 +102,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Friend request declined' });
     }
   } catch (e) {
-    console.error('Error responding to friend request:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
       return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
     }
 
@@ -58,7 +57,6 @@ export async function POST(request: NextRequest) {
       path: filePath 
     }, { status: 200 });
   } catch (e) {
-    console.error('Upload error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

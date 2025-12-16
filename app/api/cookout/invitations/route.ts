@@ -19,11 +19,8 @@ export async function GET(request: Request) {
       .eq('username', username);
 
     if (participantError) {
-      console.error('Error fetching participants:', participantError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
-
-    console.log(`Found ${participants?.length || 0} participants for username: ${username}`);
 
     if (!participants || participants.length === 0) {
       return NextResponse.json({ invitations: [] });
@@ -52,7 +49,7 @@ export async function GET(request: Request) {
       .in('recipe_id', recipeIds);
 
     if (recipeError) {
-      console.error('Error fetching recipes:', recipeError);
+      // Error fetching recipes, continue with empty recipe map
     }
 
     // Create a map of recipe_id -> recipe name
@@ -81,10 +78,8 @@ export async function GET(request: Request) {
       };
     });
 
-    console.log(`Returning ${invitationsFormatted.length} formatted invitations`);
     return NextResponse.json({ invitations: invitationsFormatted });
   } catch (err: any) {
-    console.error('Error fetching invitations:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

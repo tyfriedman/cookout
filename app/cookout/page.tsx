@@ -79,13 +79,10 @@ export default function CookoutPage() {
       const response = await fetch(`/api/cookout/invitations?username=${username}`);
       const data = await response.json();
       if (response.ok) {
-        console.log('Fetched invitations:', data.invitations);
         setInvitations(data.invitations || []);
-      } else {
-        console.error('Error response:', data);
       }
     } catch (err) {
-      console.error('Error fetching invitations:', err);
+      // Error fetching invitations
     } finally {
       setLoadingInvitations(false);
     }
@@ -125,16 +122,6 @@ export default function CookoutPage() {
     }
   }, [usernameInput]);
 
-  // Debug: log all invitations
-  useEffect(() => {
-    if (invitations.length > 0) {
-      const pendingInvitations = invitations.filter(inv => inv.status === 'pending' && !inv.is_creator);
-      const myInvitations = invitations.filter(inv => inv.is_creator || inv.status === 'accepted');
-      console.log('All invitations:', invitations);
-      console.log('Pending:', pendingInvitations);
-      console.log('My invitations:', myInvitations);
-    }
-  }, [invitations]);
 
   // Refetch invitations when returning to main view
   useEffect(() => {
@@ -158,7 +145,7 @@ export default function CookoutPage() {
         setRecipeSearchResults(data.recipes || []);
       }
     } catch (err) {
-      console.error('Error searching recipes:', err);
+      // Error searching recipes
     }
   }
 
@@ -174,7 +161,7 @@ export default function CookoutPage() {
         setUsernameSearchResults(data.users || []);
       }
     } catch (err) {
-      console.error('Error searching users:', err);
+      // Error searching users
     }
   }
 
@@ -187,7 +174,7 @@ export default function CookoutPage() {
         setRecipeIngredients(data.recipe.ingredients || []);
       }
     } catch (err) {
-      console.error('Error fetching recipe details:', err);
+      // Error fetching recipe details
     }
   }
 
@@ -207,11 +194,9 @@ export default function CookoutPage() {
       if (response.ok) {
         // Refresh invitations list
         fetchInvitations();
-      } else {
-        console.error('Failed to accept invitation:', data.error || 'Failed to accept invitation');
       }
     } catch (err) {
-      console.error('Error accepting invitation:', err);
+      // Error accepting invitation
     }
   }
 
@@ -230,19 +215,17 @@ export default function CookoutPage() {
         setSelectedIngredientsToBring(new Set());
       }
     } catch (err) {
-      console.error('Error fetching invitation detail:', err);
+      // Error fetching invitation detail
     }
   }
 
   async function createInvitation() {
     if (!username || !selectedRecipe || !cookoutDate || !cookoutTime) {
-      console.error('Please fill in all required fields');
       return;
     }
 
     const dateTime = new Date(`${cookoutDate}T${cookoutTime}`);
     if (isNaN(dateTime.getTime())) {
-      console.error('Invalid date or time');
       return;
     }
 
@@ -265,11 +248,9 @@ export default function CookoutPage() {
         resetCreateForm();
         setView('main');
         fetchInvitations();
-      } else {
-        console.error('Failed to create invitation:', data.error || 'Failed to create invitation');
       }
     } catch (err) {
-      console.error('Error creating invitation:', err);
+      // Error creating invitation
     } finally {
       setCreating(false);
     }
@@ -294,11 +275,9 @@ export default function CookoutPage() {
       if (response.ok) {
         setView('main');
         fetchInvitations();
-      } else {
-        console.error('Failed to confirm ingredients:', data.error || 'Failed to confirm ingredients');
       }
     } catch (err) {
-      console.error('Error confirming ingredients:', err);
+      // Error confirming ingredients
     } finally {
       setConfirming(false);
     }

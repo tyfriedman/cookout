@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (checkError) {
-      console.error('Check like error:', checkError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -39,7 +38,6 @@ export async function POST(request: Request) {
         .eq('user_id', user_id);
 
       if (deleteError) {
-        console.error('Delete like error:', deleteError);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
       }
 
@@ -51,14 +49,12 @@ export async function POST(request: Request) {
         .insert([{ post_id, user_id }]);
 
       if (insertError) {
-        console.error('Insert like error:', insertError);
         return NextResponse.json({ error: 'Database error' }, { status: 500 });
       }
 
       return NextResponse.json({ liked: true });
     }
   } catch (e) {
-    console.error('POST error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
@@ -83,7 +79,6 @@ export async function GET(request: Request) {
       .eq('post_id', postId);
 
     if (countError) {
-      console.error('Count error:', countError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -92,7 +87,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ likeCount, userHasLiked });
   } catch (e) {
-    console.error('GET error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

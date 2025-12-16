@@ -105,7 +105,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Friend request sent' });
   } catch (e) {
-    console.error('Error sending friend request:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

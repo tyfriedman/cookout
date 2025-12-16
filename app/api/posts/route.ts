@@ -1,31 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
-import fs from 'fs';
-
-// #region agent log helper
-function logDebug(payload: Record<string, any>) {
-  try {
-    fs.appendFileSync(
-      '/Users/tyfriedman/nd/databases/cookout/.cursor/debug.log',
-      JSON.stringify({
-        sessionId: 'debug-session',
-        runId: 'run1',
-        timestamp: Date.now(),
-        ...payload,
-      }) + '\n',
-      { encoding: 'utf8' }
-    );
-  } catch {
-    // swallow logging errors in debug mode
-  }
-}
-// #endregion
 
 // GET - fetch posts (all posts OR filtered by username)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const username = searchParams.get('username');
+    const currentUser = searchParams.get('currentUser'); // Username of the logged-in user
 
     const supabase = getSupabaseServerClient();
 
@@ -42,17 +23,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
 
-    // #region agent log
-    logDebug({
-      location: 'app/api/posts/route.ts:26',
-      message: 'Fetched posts from Supabase',
-      data: { count: data?.length ?? 0, first: data?.[0] ?? null, username },
-      hypothesisId: 'A',
-    });
-    // #endregion
-
     if (error) {
-      console.error('Supabase error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -63,44 +34,43 @@ export async function GET(request: Request) {
       .select('username, profile_picture_url')
       .in('username', usernames);
 
-    // #region agent log
-    logDebug({
-      location: 'app/api/posts/route.ts:37',
-      message: 'Fetched profile pictures for usernames',
-      data: { usernames, usersCount: usersData?.length ?? 0 },
-      hypothesisId: 'A',
-    });
-    // #endregion
-
     const profilePicturesMap = new Map(
       (usersData || []).map((user: any) => [user.username, user.profile_picture_url])
     );
 
-    // Add profile picture URLs to posts
+    // Fetch like counts and user likes from the likes table for all posts
+    const postIds = (data || []).map((post: any) => post.post_id);
+    let likeCountsMap = new Map<number | string, number>();
+    let userLikesMap = new Map<number | string, boolean>();
+    
+    if (postIds.length > 0) {
+      const { data: likesData } = await supabase
+        .from('likes')
+        .select('post_id, user_id')
+        .in('post_id', postIds);
+
+      // Count likes per post and check if current user has liked
+      (likesData || []).forEach((like: any) => {
+        const currentCount = likeCountsMap.get(like.post_id) || 0;
+        likeCountsMap.set(like.post_id, currentCount + 1);
+        
+        // Check if current user has liked this post
+        if (currentUser && like.user_id === currentUser) {
+          userLikesMap.set(like.post_id, true);
+        }
+      });
+    }
+
+    // Add profile picture URLs, accurate like counts, and user like status to posts
     const postsWithProfilePics = (data || []).map((post: any) => ({
       ...post,
       profile_picture_url: profilePicturesMap.get(post.usernamefk) || null,
+      like_count: likeCountsMap.get(post.post_id) || 0,
+      user_has_liked: userLikesMap.get(post.post_id) || false,
     }));
-
-    // #region agent log
-    logDebug({
-      location: 'app/api/posts/route.ts:46',
-      message: 'Posts enriched with profile pictures',
-      data: {
-        count: postsWithProfilePics.length,
-        first: postsWithProfilePics[0] ?? null,
-        profilePicValues: postsWithProfilePics.map((p: any) => ({
-          username: p.usernamefk,
-          profile_picture_url: p.profile_picture_url,
-        })),
-      },
-      hypothesisId: 'A',
-    });
-    // #endregion
 
     return NextResponse.json({ posts: postsWithProfilePics });
   } catch (e) {
-    console.error('GET error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
@@ -133,7 +103,6 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error('Supabase insert error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -152,7 +121,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ post: postWithProfilePic }, { status: 201 });
   } catch (e) {
-    console.error('POST error:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

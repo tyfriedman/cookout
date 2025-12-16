@@ -45,7 +45,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error('Error accepting invitation:', err);
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 });
   }
 }

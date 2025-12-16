@@ -35,7 +35,6 @@ export async function GET(request: Request) {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching friend requests:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
@@ -51,7 +50,7 @@ export async function GET(request: Request) {
           .maybeSingle();
 
         if (userError) {
-          console.error('Error fetching user:', userError);
+          // Error fetching user, use default values
         }
 
         return {
@@ -71,7 +70,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ requests });
   } catch (e) {
-    console.error('Error fetching friend requests:', e);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
