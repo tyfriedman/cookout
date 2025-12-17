@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { ingredientsMatch } from '@/app/lib/ingredientMatching';
 
 type Body = {
   username: string;
@@ -31,29 +32,6 @@ type Body = {
     mealTypes?: string[];
   };
 };
-
-// Helper function to normalize ingredient names for matching
-function normalizeIngredient(name: string): string {
-  return name.toLowerCase().trim();
-}
-
-// Helper function to check if ingredients match
-function ingredientsMatch(recipeIngredient: string, pantryIngredient: string): boolean {
-  if (!recipeIngredient || !pantryIngredient) return false;
-  
-  const recipeNorm = normalizeIngredient(recipeIngredient);
-  const pantryNorm = normalizeIngredient(pantryIngredient);
-  
-  // Exact match
-  if (recipeNorm === pantryNorm) return true;
-  
-  // Partial match: pantry ingredient contains recipe ingredient or vice versa
-  if (recipeNorm.includes(pantryNorm) || pantryNorm.includes(recipeNorm)) {
-    return true;
-  }
-  
-  return false;
-}
 
 export async function POST(request: Request) {
   try {

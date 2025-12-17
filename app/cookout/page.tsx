@@ -35,6 +35,26 @@ type InvitationDetail = {
   }>;
 };
 
+type CookoutPlanItem = {
+  ingredient_index: number;
+  ingredient_name: string;
+  source: 'pantry' | 'shopping';
+  explanation: string[];
+};
+
+type CookoutPlan = {
+  assignments_by_user: Record<string, CookoutPlanItem[]>;
+  shopping_list: Array<{ ingredient_index: number; ingredient_name: string; explanation: string[] }>;
+  metrics: {
+    total: number;
+    already_covered: number;
+    assigned_from_pantry: number;
+    assigned_to_shopping: number;
+    coverage_pct: number;
+  };
+  unassigned_due_to_capacity: Array<{ ingredient_index: number; ingredient_name: string }>;
+};
+
 export default function CookoutPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [view, setView] = useState<'main' | 'create' | 'view-invitation'>('main');
@@ -48,6 +68,12 @@ export default function CookoutPage() {
   const [invitationDetail, setInvitationDetail] = useState<InvitationDetail | null>(null);
   const [selectedIngredientsToBring, setSelectedIngredientsToBring] = useState<Set<number>>(new Set());
   const [confirming, setConfirming] = useState(false);
+
+  // Auto-assignment plan state
+  const [plan, setPlan] = useState<CookoutPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planIncludePending, setPlanIncludePending] = useState(true);
+  const [planMaxItemsPerPerson, setPlanMaxItemsPerPerson] = useState(3);
 
   // Define fetchInvitations before useEffects that use it
   const fetchInvitations = useCallback(async () => {
@@ -114,6 +140,7 @@ export default function CookoutPage() {
       const data = await response.json();
       if (response.ok && data.invitation) {
         setInvitationDetail(data.invitation);
+        setPlan(null);
         // Pre-select ingredients that are already covered
         const coveredIndices = new Set(
           data.invitation.ingredients
@@ -124,6 +151,34 @@ export default function CookoutPage() {
       }
     } catch (err) {
       // Error fetching invitation detail
+    }
+  }
+
+  async function generatePlan(invitationId: number) {
+    if (!username) return;
+    setPlanLoading(true);
+    try {
+      const response = await fetch('/api/cookout/plan-recommendation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invitation_id: invitationId,
+          viewer_username: username,
+          constraints: {
+            include_pending_participants: planIncludePending,
+            max_items_per_person: planMaxItemsPerPerson,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok && data.plan) {
+        setPlan(data.plan as CookoutPlan);
+      }
+    } catch (err) {
+      // ignore
+    } finally {
+      setPlanLoading(false);
     }
   }
 
@@ -185,6 +240,11 @@ export default function CookoutPage() {
   if (view === 'view-invitation' && invitationDetail) {
     const isCreator = invitationDetail.creator_username === username;
     const availableIngredients = invitationDetail.ingredients.filter(ing => !ing.is_covered);
+    const myRecommended = plan && username ? (plan.assignments_by_user[username] || []) : [];
+    const availableIndexSet = new Set(availableIngredients.map((ing) => ing.index));
+    const myRecommendedIndices = myRecommended
+      .map((i) => i.ingredient_index)
+      .filter((idx) => availableIndexSet.has(idx));
 
     return (
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -194,6 +254,7 @@ export default function CookoutPage() {
               setView('main');
               setSelectedInvitationId(null);
               setInvitationDetail(null);
+              setPlan(null);
             }}
             style={{
               padding: '8px 16px',
@@ -221,6 +282,153 @@ export default function CookoutPage() {
               {new Date(invitationDetail.cookout_date).toLocaleString()}
             </div>
           </div>
+
+          {/* Auto-assignment Plan */}
+          <section style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 20, marginBottom: 16 }}>Auto-assignment Plan</h2>
+
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151' }}>
+                <input
+                  type="checkbox"
+                  checked={planIncludePending}
+                  onChange={(e) => setPlanIncludePending(e.target.checked)}
+                />
+                Include pending participants
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#374151' }}>
+                Max items per person
+                <input
+                  type="number"
+                  value={planMaxItemsPerPerson}
+                  min={0}
+                  max={20}
+                  onChange={(e) => setPlanMaxItemsPerPerson(Number(e.target.value))}
+                  style={{
+                    width: 80,
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #d1d5db',
+                  }}
+                />
+              </label>
+
+              <button
+                onClick={() => generatePlan(invitationDetail.invitation_id)}
+                disabled={planLoading}
+                style={{
+                  padding: '8px 14px',
+                  background: planLoading ? '#d1d5db' : '#111827',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: planLoading ? 'not-allowed' : 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {planLoading ? 'Generating...' : plan ? 'Regenerate plan' : 'Generate plan'}
+              </button>
+
+              {!isCreator && plan && myRecommendedIndices.length > 0 && (
+                <button
+                  onClick={() => setSelectedIngredientsToBring(new Set(myRecommendedIndices))}
+                  style={{
+                    padding: '8px 14px',
+                    background: '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  Use my recommendations
+                </button>
+              )}
+            </div>
+
+            {plan && (
+              <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: 16 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 14, color: '#374151' }}>
+                  <div><strong>Total:</strong> {plan.metrics.total}</div>
+                  <div><strong>Already covered:</strong> {plan.metrics.already_covered}</div>
+                  <div><strong>Covered via pantry:</strong> {plan.metrics.assigned_from_pantry}</div>
+                  <div><strong>Needs shopping:</strong> {plan.metrics.assigned_to_shopping}</div>
+                  <div><strong>Coverage:</strong> {plan.metrics.coverage_pct}%</div>
+                </div>
+
+                {!isCreator && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Recommended for you</div>
+                    {myRecommended.length === 0 ? (
+                      <div style={{ color: '#6b7280', fontStyle: 'italic' }}>No recommendations.</div>
+                    ) : (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {myRecommended.map((item) => (
+                          <li key={`${item.ingredient_index}-${item.ingredient_name}`} style={{ marginBottom: 6 }}>
+                            {item.ingredient_name}{' '}
+                            <span style={{ color: item.source === 'pantry' ? '#065f46' : '#92400e' }}>
+                              ({item.source === 'pantry' ? 'pantry match' : 'shopping'})
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
+                {isCreator && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 8 }}>Assignments</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {Object.keys(plan.assignments_by_user)
+                        .sort((a, b) => a.localeCompare(b))
+                        .map((u) => (
+                          <div
+                            key={u}
+                            style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, padding: 12 }}
+                          >
+                            <div style={{ fontWeight: 600, marginBottom: 6 }}>{u}</div>
+                            {(plan.assignments_by_user[u] || []).length === 0 ? (
+                              <div style={{ color: '#6b7280', fontStyle: 'italic' }}>No assigned items.</div>
+                            ) : (
+                              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                                {(plan.assignments_by_user[u] || []).map((item) => (
+                                  <li key={`${u}-${item.ingredient_index}-${item.ingredient_name}`} style={{ marginBottom: 6 }}>
+                                    {item.ingredient_name}{' '}
+                                    <span style={{ color: item.source === 'pantry' ? '#065f46' : '#92400e' }}>
+                                      ({item.source === 'pantry' ? 'pantry match' : 'shopping'})
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>Shopping list</div>
+                  {plan.shopping_list.length === 0 ? (
+                    <div style={{ color: '#6b7280', fontStyle: 'italic' }}>No shopping needed.</div>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {plan.shopping_list.map((item) => (
+                        <li key={`shop-${item.ingredient_index}-${item.ingredient_name}`} style={{ marginBottom: 6 }}>
+                          {item.ingredient_name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
 
           {!isCreator && (
             <section style={{ marginBottom: 32 }}>
