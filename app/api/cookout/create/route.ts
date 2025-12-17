@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Create the invitation
     const { data: invitation, error: inviteError } = await supabase
-      .from('cookout_invitations')
+      .from('cookout')
       .insert({
         creator_username,
         recipe_id,

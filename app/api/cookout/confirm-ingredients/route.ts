@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     // Get recipe to get ingredient names
     const { data: invitation, error: inviteError } = await supabase
-      .from('cookout_invitations')
+      .from('cookout')
       .select(`
         recipe_id,
         recipe:recipe_id (

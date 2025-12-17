@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     // Fetch invitations separately
     const { data: invitations, error: inviteError } = await supabase
-      .from('cookout_invitations')
+      .from('cookout')
       .select('invitation_id, creator_username, recipe_id, cookout_date, created_at')
       .in('invitation_id', invitationIds);
 

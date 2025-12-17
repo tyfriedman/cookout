@@ -17,7 +17,7 @@ export async function GET(
 
     // Get invitation details
     const { data: invitation, error: inviteError } = await supabase
-      .from('cookout_invitations')
+      .from('cookout')
       .select(`
         invitation_id,
         creator_username,
