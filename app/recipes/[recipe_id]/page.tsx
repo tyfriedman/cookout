@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import CookoutCreateInvitation from '@/app/components/CookoutCreateInvitation';
 
 type Recipe = {
   recipe_id: number;
@@ -21,6 +22,13 @@ export default function RecipeDetailPage() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [showCreateCookout, setShowCreateCookout] = useState(false);
+
+  useEffect(() => {
+    const u = window.localStorage.getItem('cookout_username');
+    setUsername(u);
+  }, []);
 
   useEffect(() => {
     async function fetchRecipe() {
@@ -80,6 +88,70 @@ export default function RecipeDetailPage() {
             </li>
           ))}
       </ol>
+
+      <div style={{ marginTop: 32 }}>
+        <button
+          onClick={() => {
+            if (!username) return;
+            setShowCreateCookout(true);
+          }}
+          disabled={!username}
+          style={{
+            width: '100%',
+            padding: '14px',
+            background: username ? '#2563eb' : '#d1d5db',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: username ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Create cookout with this recipe
+        </button>
+        {!username && (
+          <p style={{ marginTop: 10, color: '#6b7280' }}>
+            Please log in to create cookout invitations.
+          </p>
+        )}
+      </div>
+
+      {showCreateCookout && username && (
+        <div
+          onClick={() => setShowCreateCookout(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            zIndex: 1000,
+            padding: 24,
+            overflowY: 'auto',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 920,
+              margin: '40px auto',
+              background: '#fff',
+              borderRadius: 12,
+              border: '1px solid #e5e7eb',
+              padding: 24,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+            }}
+          >
+            <CookoutCreateInvitation
+              username={username}
+              initialRecipeId={recipe.recipe_id}
+              title="Create Cookout Invitation"
+              closeLabel="× Close"
+              onClose={() => setShowCreateCookout(false)}
+              onCreated={() => setShowCreateCookout(false)}
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
